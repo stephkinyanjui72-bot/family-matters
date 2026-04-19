@@ -1,0 +1,26 @@
+# Dependencies — Railway reinstalls these on deploy, no need to upload
+node_modules/
+
+# Next.js build output — regenerated on deploy
+.next/
+out/
+
+# Environment variables — NEVER commit these, they hold secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

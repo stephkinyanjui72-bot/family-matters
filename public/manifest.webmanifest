@@ -1,0 +1,13 @@
+{
+  "name": "Family Matters — Party Games",
+  "short_name": "Family Matters",
+  "description": "10 freaky party games for game nights.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0612",
+  "theme_color": "#0a0612",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
