@@ -83,8 +83,11 @@ function Home() {
         <div className="w-full max-w-sm flex flex-col gap-3 pop-in">
           <button className="btn-primary text-xl h-16" onClick={() => setMode("host")}>🎉 Host a Party</button>
           <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>📱 Join with Code</button>
+          <a href="/download" className="text-center text-white/50 text-sm mt-2 hover:text-white underline underline-offset-4">
+            📲 Get the Android app
+          </a>
           <p className="text-center text-white/40 text-xs mt-4 uppercase tracking-widest">
-            host on one phone · others scan the QR · same WiFi
+            host on any device · others scan the QR · works over the internet
           </p>
         </div>
       )}
