@@ -36,9 +36,8 @@ export default function RoomPage() {
     if (!room) return;
     (async () => {
       try {
-        const res = await fetch("/_lan");
-        const { ip, port } = await res.json();
-        const url = `http://${ip}:${port}/?code=${room.code}`;
+        const base = typeof window !== "undefined" ? window.location.origin : "";
+        const url = `${base}/?code=${room.code}`;
         setJoinUrl(url);
         const dataUrl = await QRCode.toDataURL(url, {
           width: 320,

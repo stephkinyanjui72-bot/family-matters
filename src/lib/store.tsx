@@ -1,9 +1,10 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { getSocket, resetSocket } from "./socket";
+import { getSupabase } from "./supabaseClient";
 import type { Intensity, Room, GameId } from "./types";
 
 const LS_SESSION = "party:session";
+const HEARTBEAT_INTERVAL_MS = 15_000;
 
 type Session = { code: string; pid: string; name: string };
 
@@ -39,130 +40,213 @@ function loadSession(): Session | null {
   }
 }
 
+// Fetch the room + players from Supabase and shape into the Room type the UI uses.
+async function fetchRoomState(code: string): Promise<Room | null> {
+  const sb = getSupabase();
+  const upper = code.toUpperCase();
+  const [roomRes, playersRes] = await Promise.all([
+    sb.from("rooms").select("*").eq("code", upper).maybeSingle(),
+    sb.from("room_players").select("*").eq("room_code", upper).order("joined_at", { ascending: true }),
+  ]);
+  const roomRow = roomRes.data as Record<string, unknown> | null;
+  const players = (playersRes.data || []) as Array<Record<string, unknown>>;
+  if (!roomRow) return null;
+  const hostPlayer = players.find((p) => !!p.is_host);
+  return {
+    code: String(roomRow.code),
+    hostId: String(hostPlayer?.pid ?? ""),
+    intensity: roomRow.intensity as Intensity,
+    players: players.map((p) => ({
+      id: String(p.pid),
+      name: String(p.name),
+      isHost: !!p.is_host,
+      online: !!p.online,
+    })),
+    currentGame: (roomRow.current_game as GameId | null) ?? null,
+    gameState: roomRow.game_state,
+    bags: (roomRow.bags ?? {}) as Record<string, number[]>,
+    createdAt: new Date(String(roomRow.created_at)).getTime(),
+  };
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [pid, setPid] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const sessionRef = useRef<Session | null>(null);
+  const subCodeRef = useRef<string | null>(null);
 
+  // Subscribe to realtime updates for the given room code. Any DB change triggers
+  // a full refetch — simpler than merging deltas and the payloads are tiny.
   useEffect(() => {
-    const s = getSocket();
+    if (!room?.code) return;
+    const code = room.code.toUpperCase();
+    if (subCodeRef.current === code) return;
+    subCodeRef.current = code;
 
-    const onConnect = () => {
-      setConnected(true);
-      // If we had a session, try to rejoin automatically.
-      const session = sessionRef.current || loadSession();
-      if (session && session.code && session.pid) {
-        s.emit(
-          "room:rejoin",
-          { code: session.code, pid: session.pid, name: session.name },
-          (res: { ok: boolean; code?: string; pid?: string; error?: string }) => {
-            if (res.ok && res.pid) {
-              setPid(res.pid);
-              sessionRef.current = { ...session, pid: res.pid };
-              saveSession(sessionRef.current);
-            } else {
-              // seat gone, clear session
-              sessionRef.current = null;
-              saveSession(null);
-              setPid(null);
-              setRoom(null);
-            }
-          }
-        );
+    const sb = getSupabase();
+    const refetch = async () => {
+      const next = await fetchRoomState(code);
+      if (next) setRoom(next);
+      else {
+        // Room deleted on the server — clear our session.
+        setRoom(null);
+        setPid(null);
+        sessionRef.current = null;
+        saveSession(null);
       }
     };
-    const onDisconnect = () => setConnected(false);
-    const onRoomUpdate = (r: Room) => setRoom(r);
-    const onRoomClosed = () => {
-      setRoom(null);
-      setPid(null);
-      sessionRef.current = null;
-      saveSession(null);
-    };
 
-    s.on("connect", onConnect);
-    s.on("disconnect", onDisconnect);
-    s.on("room:update", onRoomUpdate);
-    s.on("room:closed", onRoomClosed);
-
-    if (s.connected) onConnect();
+    const channel = sb
+      .channel(`room:${code}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rooms", filter: `code=eq.${code}` }, refetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "room_players", filter: `room_code=eq.${code}` }, refetch)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setConnected(true);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setConnected(false);
+      });
 
     return () => {
-      s.off("connect", onConnect);
-      s.off("disconnect", onDisconnect);
-      s.off("room:update", onRoomUpdate);
-      s.off("room:closed", onRoomClosed);
+      subCodeRef.current = null;
+      sb.removeChannel(channel);
     };
+  }, [room?.code]);
+
+  // On first load, if we have a cached session, try to rejoin.
+  useEffect(() => {
+    const session = loadSession();
+    if (!session || !session.code || !session.pid) return;
+    sessionRef.current = session;
+    (async () => {
+      const res = await fetch(`/api/rooms/${encodeURIComponent(session.code)}/rejoin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pid: session.pid, name: session.name }),
+      }).then((r) => r.json()).catch(() => ({ ok: false }));
+      if (res?.ok && res.pid) {
+        setPid(res.pid);
+        const effective = { ...session, pid: res.pid };
+        sessionRef.current = effective;
+        saveSession(effective);
+        const next = await fetchRoomState(session.code);
+        if (next) setRoom(next);
+      } else {
+        sessionRef.current = null;
+        saveSession(null);
+      }
+    })();
   }, []);
 
-  const createRoom = useCallback<Ctx["createRoom"]>((name, intensity) => {
-    return new Promise((resolve) => {
-      getSocket().emit(
-        "room:create",
-        { name, intensity },
-        (res: { ok: boolean; code?: string; pid?: string; error?: string }) => {
-          if (res.ok && res.code && res.pid) {
-            setPid(res.pid);
-            sessionRef.current = { code: res.code, pid: res.pid, name };
-            saveSession(sessionRef.current);
-            resolve({ ok: true, code: res.code });
-          } else resolve({ ok: false, error: res.error || "Could not create" });
-        }
-      );
-    });
+  // Heartbeat + stale-sweep while the player is in a room.
+  useEffect(() => {
+    if (!room?.code || !pid) return;
+    const code = room.code;
+    let active = true;
+    const ping = async () => {
+      if (!active) return;
+      try {
+        await fetch(`/api/rooms/${encodeURIComponent(code)}/heartbeat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pid }),
+        });
+      } catch {}
+    };
+    ping();
+    const handle = setInterval(ping, HEARTBEAT_INTERVAL_MS);
+    return () => { active = false; clearInterval(handle); };
+  }, [room?.code, pid]);
+
+  const createRoom = useCallback<Ctx["createRoom"]>(async (name, intensity) => {
+    const res = await fetch(`/api/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, intensity }),
+    }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
+    if (!res?.ok || !res.code || !res.pid) return { ok: false, error: res?.error || "Could not create" };
+    setPid(res.pid);
+    sessionRef.current = { code: res.code, pid: res.pid, name };
+    saveSession(sessionRef.current);
+    const next = await fetchRoomState(res.code);
+    if (next) setRoom(next);
+    return { ok: true, code: res.code };
   }, []);
 
-  const joinRoom = useCallback<Ctx["joinRoom"]>((code, name) => {
-    return new Promise((resolve) => {
-      getSocket().emit(
-        "room:join",
-        { code, name },
-        (res: { ok: boolean; code?: string; pid?: string; error?: string }) => {
-          if (res.ok && res.code && res.pid) {
-            setPid(res.pid);
-            sessionRef.current = { code: res.code, pid: res.pid, name };
-            saveSession(sessionRef.current);
-            resolve({ ok: true, code: res.code });
-          } else resolve({ ok: false, error: res.error });
-        }
-      );
-    });
+  const joinRoom = useCallback<Ctx["joinRoom"]>(async (code, name) => {
+    const upper = code.toUpperCase();
+    const res = await fetch(`/api/rooms/${encodeURIComponent(upper)}/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
+    if (!res?.ok || !res.code || !res.pid) return { ok: false, error: res?.error || "Could not join" };
+    setPid(res.pid);
+    sessionRef.current = { code: res.code, pid: res.pid, name };
+    saveSession(sessionRef.current);
+    const next = await fetchRoomState(res.code);
+    if (next) setRoom(next);
+    return { ok: true, code: res.code };
   }, []);
 
   const leaveRoom = useCallback(() => {
-    const s = getSocket();
-    s.emit("room:leave");
-    sessionRef.current = null;
-    saveSession(null);
+    const current = room?.code;
+    const currentPid = pid;
     setRoom(null);
     setPid(null);
-    resetSocket();
-  }, []);
+    sessionRef.current = null;
+    saveSession(null);
+    if (current && currentPid) {
+      fetch(`/api/rooms/${encodeURIComponent(current)}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pid: currentPid }),
+      }).catch(() => {});
+    }
+  }, [room?.code, pid]);
 
-  const setIntensity = useCallback((i: Intensity) => getSocket().emit("room:setIntensity", i), []);
-  const selectGame = useCallback((g: GameId) => getSocket().emit("game:select", g), []);
-  const exitGame = useCallback(() => getSocket().emit("game:exit"), []);
+  const setIntensity = useCallback((i: Intensity) => {
+    if (!room?.code || !pid) return;
+    fetch(`/api/rooms/${encodeURIComponent(room.code)}/intensity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid, intensity: i }),
+    }).catch(() => {});
+  }, [room?.code, pid]);
+
+  const selectGame = useCallback((g: GameId) => {
+    if (!room?.code || !pid) return;
+    fetch(`/api/rooms/${encodeURIComponent(room.code)}/game`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid, gameId: g }),
+    }).catch(() => {});
+  }, [room?.code, pid]);
+
+  const exitGame = useCallback(() => {
+    if (!room?.code || !pid) return;
+    fetch(`/api/rooms/${encodeURIComponent(room.code)}/game`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid }),
+    }).catch(() => {});
+  }, [room?.code, pid]);
+
   const gameAction = useCallback((type: string, payload?: unknown) => {
-    getSocket().emit("game:action", { type, payload });
-  }, []);
+    if (!room?.code || !pid) return;
+    fetch(`/api/rooms/${encodeURIComponent(room.code)}/action`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid, action: { type, payload } }),
+    }).catch(() => {});
+  }, [room?.code, pid]);
 
   const me = useMemo(() => room?.players.find((p) => p.id === pid) || null, [room, pid]);
   const isHost = !!me?.isHost;
 
   const value: Ctx = {
-    room,
-    pid,
-    isHost,
-    me,
-    connected,
-    createRoom,
-    joinRoom,
-    leaveRoom,
-    setIntensity,
-    selectGame,
-    exitGame,
-    gameAction,
+    room, pid, isHost, me, connected,
+    createRoom, joinRoom, leaveRoom,
+    setIntensity, selectGame, exitGame, gameAction,
   };
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
