@@ -1,20 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1a0420"/>
-      <stop offset="100%" stop-color="#0a0612"/>
+      <stop offset="0%" stop-color="#ff6aa0"/>
+      <stop offset="40%" stop-color="#ff8a3d"/>
+      <stop offset="75%" stop-color="#b46bff"/>
+      <stop offset="100%" stop-color="#3debff"/>
     </linearGradient>
-    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff3d6e"/>
-      <stop offset="50%" stop-color="#ff8a3d"/>
-      <stop offset="100%" stop-color="#b46bff"/>
-    </linearGradient>
-    <radialGradient id="halo" cx="50%" cy="40%" r="55%">
-      <stop offset="0%" stop-color="#ff3d6e" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#ff3d6e" stop-opacity="0"/>
+    <radialGradient id="sparkle" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" rx="104" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="104" fill="url(#halo)"/>
-  <text x="50%" y="58%" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="900" font-size="300" fill="url(#glow)">🔥</text>
+  <rect width="512" height="512" rx="104" fill="url(#sparkle)"/>
+  <text x="20%" y="35%" text-anchor="middle" font-size="110" transform="rotate(-15 102 180)">✨</text>
+  <text x="80%" y="32%" text-anchor="middle" font-size="100" transform="rotate(20 410 160)">💋</text>
+  <text x="50%" y="68%" text-anchor="middle" font-family="system-ui, 'Segoe UI Emoji', sans-serif" font-size="280">🎉</text>
+  <text x="18%" y="85%" text-anchor="middle" font-size="90" transform="rotate(-10 92 435)">🔥</text>
+  <text x="85%" y="88%" text-anchor="middle" font-size="80" transform="rotate(15 435 450)">🍾</text>
 </svg>

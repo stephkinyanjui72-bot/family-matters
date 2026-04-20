@@ -2,11 +2,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-// The APK lives on GitHub Releases. The /latest URL always redirects to the
-// newest release's download — upload a new APK to a fresh release and the
-// button here points at it automatically.
+// The APK lives on GitHub Releases. /releases/latest/download/<filename>
+// redirects to whichever release is newest — re-upload with the same
+// filename and every /download visitor gets the new APK, no code change.
+// Repo must be PUBLIC for these URLs to work without login.
 const GITHUB_OWNER = "stephkinyanjui72-bot";
 const GITHUB_REPO = "family-matters";
+const APK_FILENAME = "app-debug.apk";
+const APK_DOWNLOAD = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/${APK_FILENAME}`;
 const RELEASES_LATEST = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 
 type Platform = "android" | "ios" | "desktop" | "unknown";
@@ -70,9 +73,7 @@ function AndroidInstall() {
         <h2 className="title text-2xl font-black">Install on your phone</h2>
       </div>
       <a
-        href={RELEASES_LATEST}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={APK_DOWNLOAD}
         className="btn-primary text-xl h-16 text-center"
       >
         ⬇ Download APK
