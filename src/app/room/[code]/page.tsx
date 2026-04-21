@@ -117,7 +117,7 @@ export default function RoomPage() {
         </button>
       </section>
 
-      <section className="card">
+      <section className="card cyan-frame">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold">Players <span className="text-white/50 font-normal">({room.players.length})</span></h3>
           {me && <span className="text-xs text-white/50">You: {me.name}</span>}
@@ -141,7 +141,7 @@ export default function RoomPage() {
         </ul>
       </section>
 
-      <section className="card">
+      <section className="card cyan-frame">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold">Intensity</h3>
           <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
