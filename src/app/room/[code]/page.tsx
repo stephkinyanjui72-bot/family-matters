@@ -96,9 +96,12 @@ export default function RoomPage() {
       <section className="card-glow flex flex-col items-center gap-3">
         <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Scan to join · same WiFi</div>
         {qrDataUrl ? (
-          <div className="relative">
-            <div className="absolute -inset-3 rounded-3xl bg-gradient-to-br from-flame via-neon to-cyber blur-2xl opacity-30" />
-            <img src={qrDataUrl} alt="Join QR code" className="relative w-56 h-56 rounded-2xl bg-black/40 p-3 border border-white/10" />
+          <div className="qr-ring">
+            <img
+              src={qrDataUrl}
+              alt="Join QR code"
+              className="relative block w-56 h-56 rounded-[16px] bg-black p-3"
+            />
           </div>
         ) : (
           <div className="w-56 h-56 bg-white/5 rounded-2xl animate-pulse" />
@@ -213,51 +216,67 @@ export default function RoomPage() {
           })}
         </div>
 
-        {/* Game tiles — category-colored glow per card */}
+        {/* Game tiles — cartoon style with halo + confetti per card */}
         <div className="grid grid-cols-2 gap-3">
           {GAMES.filter((g) => filter === "all" || g.category === filter).map((g) => {
             const enabled = isHost && room.players.length >= g.minPlayers;
             const cat = CATEGORIES.find((c) => c.id === g.category)!;
-            // category-specific tint for the corner glow
-            const glowMap: Record<Category, string> = {
-              spill:  "rgba(255, 61, 110, 0.35)",
-              sleuth: "rgba(180, 107, 255, 0.35)",
-              quick:  "rgba(255, 138, 61, 0.35)",
-              play:   "rgba(61, 235, 255, 0.30)",
-              mingle: "rgba(244, 63, 94, 0.38)",   // rose
+            // per-category color map for accents (glow, halo, text)
+            const catColor: Record<Category, { glow: string; halo: string; text: string; dot1: string; dot2: string }> = {
+              spill:  { glow: "rgba(255, 61, 110, 0.38)", halo: "rgba(255,61,110,0.45)",  text: "rgb(var(--flame))", dot1: "#ff8a3d", dot2: "#ff3d6e" },
+              sleuth: { glow: "rgba(180, 107, 255, 0.38)",halo: "rgba(180,107,255,0.45)", text: "rgb(var(--neon))",  dot1: "#b46bff", dot2: "#3debff" },
+              quick:  { glow: "rgba(255, 138, 61, 0.40)", halo: "rgba(255,170,80,0.5)",   text: "rgb(var(--ember))", dot1: "#ffee5a", dot2: "#ff8a3d" },
+              play:   { glow: "rgba(61, 235, 255, 0.35)", halo: "rgba(61,235,255,0.45)",  text: "rgb(var(--cyber))", dot1: "#3debff", dot2: "#4ade80" },
+              mingle: { glow: "rgba(244, 63, 94, 0.42)",  halo: "rgba(244,63,94,0.5)",    text: "#fb7185",           dot1: "#fb7185", dot2: "#ff8a3d" },
             };
+            const c = catColor[g.category];
+            // Deterministic confetti positions derived from game id so each
+            // tile has its own but stable doodle layout.
+            const seed = g.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+            const dots = [
+              { top: `${6 + (seed % 8)}%`,  left: `${72 + (seed % 9)}%`, size: 10, color: c.dot1, opacity: 0.55 },
+              { top: `${70 + (seed % 12)}%`,left: `${8 + (seed % 10)}%`, size: 14, color: c.dot2, opacity: 0.45 },
+              { top: `${38 + (seed % 7)}%`, left: `${88 - (seed % 8)}%`, size: 6,  color: c.dot1, opacity: 0.7  },
+              { top: `${90 - (seed % 6)}%`, left: `${78 - (seed % 7)}%`, size: 8,  color: c.dot2, opacity: 0.5  },
+              { top: `${20 + (seed % 6)}%`, left: `${6 + (seed % 5)}%`,  size: 5,  color: c.dot1, opacity: 0.6  },
+            ];
             return (
               <button
                 key={g.id}
                 disabled={!enabled}
                 onClick={() => selectGame(g.id)}
                 data-disabled={!enabled}
-                className={`tile text-left p-4 ${
-                  enabled ? "" : "opacity-50"
-                }`}
-                style={{ ["--tile-glow-a" as string]: glowMap[g.category] }}
+                className={`tile tile-cartoon text-left p-4 ${enabled ? "" : "opacity-55"}`}
+                style={{ ["--tile-glow-a" as string]: c.glow }}
               >
                 <span className="tile-sheen" />
+                {/* Scattered confetti dots */}
+                {dots.map((d, i) => (
+                  <span
+                    key={i}
+                    className="confetti-dot"
+                    style={{ top: d.top, left: d.left, width: d.size, height: d.size, background: d.color, opacity: d.opacity }}
+                  />
+                ))}
+
                 <div className="flex items-start justify-between relative">
-                  <div
-                    className="text-[9px] uppercase tracking-widest font-bold"
-                    style={{
-                      color:
-                        cat.id === "spill"  ? "rgb(var(--flame))" :
-                        cat.id === "sleuth" ? "rgb(var(--neon))" :
-                        cat.id === "quick"  ? "rgb(var(--ember))" :
-                        cat.id === "play"   ? "rgb(var(--cyber))" :
-                                              "#fb7185",            // mingle: rose-400
-                    }}
-                  >
+                  <div className="text-[9px] uppercase tracking-widest font-bold" style={{ color: c.text }}>
                     {cat.emoji} {cat.label}
                   </div>
                 </div>
-                <div className="text-5xl mt-1 tile-emoji relative">{g.emoji}</div>
+
+                {/* Emoji halo — bright cartoon glow behind the icon */}
+                <div className="mt-2 relative">
+                  <div className="tile-halo" style={{ ["--halo-a" as string]: c.halo }}>
+                    <span className="text-[38px] tile-emoji leading-none">{g.emoji}</span>
+                  </div>
+                </div>
+
                 <div className="title font-black mt-3 text-base leading-tight relative">{g.name}</div>
-                <div className="text-[11px] text-white/55 mt-1 leading-snug relative">{g.blurb}</div>
+                <div className="text-[11px] text-white/60 mt-1 leading-snug relative">{g.blurb}</div>
+
                 <div className="mt-3 flex items-center justify-between relative">
-                  <span className="chip border-white/15 text-white/60 text-[10px] !py-0.5">
+                  <span className="chip border-white/15 text-white/65 text-[10px] !py-0.5">
                     {g.minPlayers}+ players
                   </span>
                   {!enabled && room.players.length < g.minPlayers && (
