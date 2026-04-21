@@ -110,6 +110,9 @@ function Home() {
           <p className="text-center text-white/40 text-xs mt-4 uppercase tracking-widest">
             host on any device · others scan the QR · works over the internet
           </p>
+          <p className="text-center text-white/25 text-[10px] mt-1 font-mono">
+            build {process.env.NEXT_PUBLIC_BUILD_SHA}
+          </p>
         </div>
       )}
 
