@@ -20,7 +20,6 @@ export function ReconnectOverlay() {
       <div className="card-glow max-w-sm text-center pop-in flex flex-col items-center gap-4">
         <Spinner />
         <p className="text-white/80 text-sm font-bold">Loading…</p>
-        <p className="text-white/50 text-xs">Your seat is held.</p>
       </div>
     </div>
   );

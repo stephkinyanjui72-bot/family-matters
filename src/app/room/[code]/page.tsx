@@ -117,35 +117,38 @@ export default function RoomPage() {
         </button>
       </section>
 
-      <section className="card cyan-frame">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold">Players <span className="text-white/50 font-normal">({room.players.length})</span></h3>
-          {me && <span className="text-xs text-white/50">You: {me.name}</span>}
-        </div>
-        <ul className="flex flex-wrap gap-2">
-          {room.players.map((p) => (
-            <li
-              key={p.id}
-              className={`chip flex items-center gap-1.5 ${
-                !p.online
-                  ? "border-white/10 text-white/40"
-                  : p.isHost
-                  ? "border-flame/60 text-flame"
-                  : "border-white/20 text-white/80"
-              }`}
-            >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.online ? (p.isHost ? "bg-flame" : "bg-emerald-400") : "bg-white/30"}`} />
-              {p.name}{p.isHost && " · host"}{!p.online && " · offline"}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className="section-frame">
+        <section className="card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold">Players <span className="text-white/50 font-normal">({room.players.length})</span></h3>
+            {me && <span className="text-xs text-white/50">You: {me.name}</span>}
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            {room.players.map((p) => (
+              <li
+                key={p.id}
+                className={`chip flex items-center gap-1.5 ${
+                  !p.online
+                    ? "border-white/10 text-white/40"
+                    : p.isHost
+                    ? "border-flame/60 text-flame"
+                    : "border-white/20 text-white/80"
+                }`}
+              >
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.online ? (p.isHost ? "bg-flame" : "bg-emerald-400") : "bg-white/30"}`} />
+                {p.name}{p.isHost && " · host"}{!p.online && " · offline"}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
 
-      <section className="card cyan-frame">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold">Intensity</h3>
-          <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
-        </div>
+      <div className="section-frame">
+        <section className="card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold">Intensity</h3>
+            <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
+          </div>
         {isHost ? (
           <div className="grid grid-cols-2 gap-2">
             {TIERS.map((t) => (
@@ -175,7 +178,8 @@ export default function RoomPage() {
         ) : (
           <p className="text-white/50 text-sm">Only the host changes the intensity.</p>
         )}
-      </section>
+        </section>
+      </div>
 
       <section>
         <div className="flex items-baseline justify-between mb-3">
