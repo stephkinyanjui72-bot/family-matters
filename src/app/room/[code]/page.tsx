@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { GAMES } from "@/lib/games";
 import type { Intensity } from "@/lib/types";
 import { GameScreen } from "@/components/GameScreen";
+import { ExitSessionButton } from "@/components/ExitSessionButton";
 
 const TIERS: { id: Intensity; label: string; tone: string }[] = [
   { id: "mild", label: "Mild", tone: "from-emerald-400 to-teal-400" },
@@ -17,7 +18,7 @@ const TIERS: { id: Intensity; label: string; tone: string }[] = [
 export default function RoomPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
-  const { room, me, isHost, connected, leaveRoom, setIntensity, selectGame } = useStore();
+  const { room, me, isHost, connected, setIntensity, selectGame } = useStore();
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>("");
@@ -57,7 +58,12 @@ export default function RoomPage() {
     );
   }
 
-  if (room.currentGame) return <GameScreen />;
+  if (room.currentGame) return (
+    <>
+      <GameScreen />
+      <ExitSessionButton />
+    </>
+  );
 
   const tier = TIERS.find((t) => t.id === room.intensity)!;
 
@@ -84,9 +90,6 @@ export default function RoomPage() {
           </div>
           <div className="title text-4xl font-black tracking-[0.4em] holo-text">{room.code}</div>
         </div>
-        <button className="text-white/60 text-sm underline hover:text-white" onClick={() => { leaveRoom(); router.replace("/"); }}>
-          Leave
-        </button>
       </header>
 
       <section className="card-glow flex flex-col items-center gap-3">
@@ -198,6 +201,7 @@ export default function RoomPage() {
           <p className="text-center text-white/40 text-xs mt-4">Waiting for host to pick a game…</p>
         )}
       </section>
+      <ExitSessionButton />
     </main>
   );
 }
