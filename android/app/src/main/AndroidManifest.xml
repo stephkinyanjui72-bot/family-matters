@@ -22,6 +22,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep-link filter for native OAuth callback.
+                 Supabase redirects to com.familymatters.party://auth/callback
+                 after a Google sign-in; Android routes that URL to this
+                 activity, which Capacitor turns into an `appUrlOpen` event
+                 the JS side listens for in src/lib/nativeAuth.ts. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.familymatters.party" />
+            </intent-filter>
+
         </activity>
 
         <provider
