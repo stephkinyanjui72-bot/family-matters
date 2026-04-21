@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { clearStoredSession, peekSession, useStore } from "@/lib/store";
+import { isNativeApp } from "@/lib/platform";
 import type { Intensity } from "@/lib/types";
 
 const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string; gate?: number }[] = [
@@ -33,6 +34,7 @@ function Home() {
   const [busy, setBusy] = useState(false);
   const [pendingGate, setPendingGate] = useState<Intensity | null>(null);
   const [stuckCode, setStuckCode] = useState<string | null>(null);
+  const [inApp, setInApp] = useState(false);
 
   useEffect(() => {
     if (room) router.replace(`/room/${room.code}`);
@@ -47,6 +49,7 @@ function Home() {
     // the auto-rejoin hasn't landed yet.
     const session = peekSession();
     if (session?.code) setStuckCode(session.code);
+    setInApp(isNativeApp());
   }, []);
 
   // Once the store successfully connects, the stuck-session banner goes away.
@@ -104,9 +107,11 @@ function Home() {
               ✕ Leave previous party ({stuckCode})
             </button>
           )}
-          <a href="/download" className="text-center text-white/50 text-sm mt-2 hover:text-white underline underline-offset-4">
-            📲 Get the Android app
-          </a>
+          {!inApp && (
+            <a href="/download" className="text-center text-white/50 text-sm mt-2 hover:text-white underline underline-offset-4">
+              📲 Get the Android app
+            </a>
+          )}
           <p className="text-center text-white/40 text-xs mt-4 uppercase tracking-widest">
             host on any device · others scan the QR · works over the internet
           </p>
