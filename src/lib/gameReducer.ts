@@ -51,6 +51,10 @@ export const MIN_PLAYERS: Record<GameId, number> = {
   "mafia": 5,
   "psychic": 4,
   "the-imposter": 4,
+  "green-glass-door": 3,
+  "thumbs-up-down": 3,
+  "alphabet-game": 3,
+  "reverse-charades": 4,
 };
 
 export function initialGameState(gameId: GameId): unknown {
@@ -171,6 +175,29 @@ export function initialGameState(gameId: GameId): unknown {
       askedIndex: 0,         // which player answers next
       votes: {},             // voter -> target (voting phase)
       caught: null,          // 'imposter' | 'innocent' | null — result of vote
+    };
+    case "green-glass-door": return {
+      phase: "idle",         // idle | playing | reveal
+      knowerIndex: 0,        // the player who holds the rule (rotates)
+      rule: null,            // { text, hint } — hidden from non-knowers
+      proposals: [],         // [{ pid, word, fits: boolean | null }]
+    };
+    case "thumbs-up-down": return {
+      prompt: null,
+      votes: {},             // pid -> 'up' | 'down'
+      revealed: false,
+    };
+    case "alphabet-game": return {
+      turnIndex: 0,
+      category: null,
+      letterIndex: 0,        // 0 = A
+      history: [],           // [{ authorPid, item, letter }]
+    };
+    case "reverse-charades": return {
+      guesserIndex: 0,
+      prompt: null,          // hidden from guesser
+      startedAt: null,
+      outcome: null,         // 'got' | 'miss'
     };
   }
 }
@@ -933,6 +960,111 @@ export function reduceGame(
           gameState: { phase: "setup", location: null, imposterPid: null, askedIndex: 0, votes: {}, caught: null },
           bags,
         };
+      }
+      return null;
+    }
+    case "green-glass-door": {
+      const knower = room.players[((s.knowerIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid !== knower.id) return null;
+        const rule = p.rule as { text?: string; hint?: string } | undefined;
+        if (!rule?.text) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return {
+          gameState: { ...s, phase: "playing", rule: { text: String(rule.text), hint: String(rule.hint || "") }, proposals: [] },
+          bags: nextBags,
+        };
+      }
+      if (action.type === "propose") {
+        if (actorPid === knower.id) return null;
+        const word = String(p.word || "").slice(0, 60).trim();
+        if (!word) return null;
+        const proposals = Array.isArray(s.proposals) ? [...(s.proposals as Array<{ pid: string; word: string; fits: boolean | null }>)] : [];
+        proposals.push({ pid: actorPid, word, fits: null });
+        return { gameState: { ...s, proposals }, bags };
+      }
+      if (action.type === "judge") {
+        if (actorPid !== knower.id) return null;
+        const idx = p.index as number;
+        const fits = p.fits as boolean;
+        const proposals = Array.isArray(s.proposals) ? [...(s.proposals as Array<{ pid: string; word: string; fits: boolean | null }>)] : [];
+        if (!proposals[idx]) return null;
+        proposals[idx] = { ...proposals[idx], fits };
+        return { gameState: { ...s, proposals }, bags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, phase: "reveal" }, bags };
+      if (action.type === "next") {
+        return {
+          gameState: { ...s, knowerIndex: (((s.knowerIndex as number) || 0) + 1) % n, rule: null, proposals: [], phase: "idle" },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "thumbs-up-down": {
+      if (action.type === "draw") {
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { prompt: String(p.prompt || ""), votes: {}, revealed: false }, bags: nextBags };
+      }
+      if (action.type === "vote") {
+        const choice = p.choice as string;
+        if (!["up", "down"].includes(choice)) return null;
+        return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: choice } }, bags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, revealed: true }, bags };
+      if (action.type === "next") return { gameState: { prompt: null, votes: {}, revealed: false }, bags };
+      return null;
+    }
+    case "alphabet-game": {
+      const current = room.players[((s.turnIndex as number) || 0) % n];
+      const currentLetter = String.fromCharCode(65 + (((s.letterIndex as number) || 0) % 26));
+      if (action.type === "setCategory") {
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { turnIndex: 0, category: String(p.category || ""), letterIndex: 0, history: [] }, bags: nextBags };
+      }
+      if (action.type === "submit") {
+        if (actorPid !== current.id) return null;
+        const text = String(p.item || "").trim();
+        if (!text) return null;
+        if (text.charAt(0).toUpperCase() !== currentLetter) return null;
+        const history = Array.isArray(s.history) ? [...(s.history as Array<{ authorPid: string; item: string; letter: string }>)] : [];
+        history.push({ authorPid: actorPid, item: text, letter: currentLetter });
+        return {
+          gameState: {
+            ...s,
+            history,
+            turnIndex: (((s.turnIndex as number) || 0) + 1) % n,
+            letterIndex: ((s.letterIndex as number) || 0) + 1,
+          },
+          bags,
+        };
+      }
+      if (action.type === "pass") {
+        if (actorPid !== current.id) return null;
+        return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, letterIndex: ((s.letterIndex as number) || 0) + 1 }, bags };
+      }
+      if (action.type === "reset") {
+        return { gameState: { ...s, turnIndex: 0, letterIndex: 0, history: [] }, bags };
+      }
+      if (action.type === "clearCategory") {
+        return { gameState: { turnIndex: 0, category: null, letterIndex: 0, history: [] }, bags };
+      }
+      return null;
+    }
+    case "reverse-charades": {
+      const guesser = room.players[((s.guesserIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid === guesser.id) return null; // guesser shouldn't draw — they'd see it
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, prompt: String(p.prompt || ""), startedAt: Date.now(), outcome: null }, bags: nextBags };
+      }
+      if (action.type === "judge") {
+        const outcome = p.outcome as string;
+        if (!["got", "miss"].includes(outcome)) return null;
+        return { gameState: { ...s, outcome }, bags };
+      }
+      if (action.type === "next") {
+        return { gameState: { ...s, guesserIndex: (((s.guesserIndex as number) || 0) + 1) % n, prompt: null, startedAt: null, outcome: null }, bags };
       }
       return null;
     }

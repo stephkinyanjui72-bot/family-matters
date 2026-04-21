@@ -27,7 +27,11 @@ export type GameId =
   | "say-the-same-thing"
   | "mafia"
   | "psychic"
-  | "the-imposter";
+  | "the-imposter"
+  | "green-glass-door"
+  | "thumbs-up-down"
+  | "alphabet-game"
+  | "reverse-charades";
 
 export interface Player {
   id: string;          // stable pid, survives reconnect

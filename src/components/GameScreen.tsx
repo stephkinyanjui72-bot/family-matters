@@ -28,6 +28,10 @@ import { SayTheSameThing } from "./games/SayTheSameThing";
 import { Mafia } from "./games/Mafia";
 import { Psychic } from "./games/Psychic";
 import { TheImposter } from "./games/TheImposter";
+import { GreenGlassDoor } from "./games/GreenGlassDoor";
+import { ThumbsUpDown } from "./games/ThumbsUpDown";
+import { AlphabetGame } from "./games/AlphabetGame";
+import { ReverseCharades } from "./games/ReverseCharades";
 
 export function GameScreen() {
   const { room, isHost, exitGame } = useStore();
@@ -88,6 +92,10 @@ function GameRouter() {
     case "mafia": return <Mafia />;
     case "psychic": return <Psychic />;
     case "the-imposter": return <TheImposter />;
+    case "green-glass-door": return <GreenGlassDoor />;
+    case "thumbs-up-down": return <ThumbsUpDown />;
+    case "alphabet-game": return <AlphabetGame />;
+    case "reverse-charades": return <ReverseCharades />;
     default: return null;
   }
 }
