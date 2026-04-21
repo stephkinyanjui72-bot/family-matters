@@ -14,7 +14,7 @@ html, body {
   height: 100%;
   color: #f5e9ff;
   overscroll-behavior: none;
-  background: #05020a;
+  background: #A6F527;
 }
 
 body {
@@ -24,33 +24,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Animated aurora background — sits at the very back behind party-bg */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -20%;
-  z-index: -3;
-  background:
-    radial-gradient(50% 40% at 20% 15%, rgba(255, 61, 110, 0.45), transparent 60%),
-    radial-gradient(45% 35% at 80% 25%, rgba(180, 107, 255, 0.45), transparent 60%),
-    radial-gradient(60% 50% at 50% 90%, rgba(61, 235, 255, 0.25), transparent 60%),
-    radial-gradient(35% 25% at 90% 80%, rgba(255, 138, 61, 0.32), transparent 55%);
-  filter: blur(30px) saturate(1.3);
-  animation: aurora 22s ease-in-out infinite alternate;
-}
+/* Aurora disabled — flat lime green background per user request */
+body::before { content: none; }
 
-/* Vignette sits ABOVE the party-bg layer so it dims everything uniformly */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.0), rgba(0,0,0,0.55) 70%),
-              linear-gradient(180deg, rgba(10,6,18,0.30), rgba(5,2,10,0.6));
-  pointer-events: none;
-}
+/* Vignette disabled too — flat background */
+body::after { content: none; }
 
-/* Party background — sits BETWEEN aurora (-3) and vignette (-1) */
+/* Party background retained as a class but unused (PartyBg component removed) */
 .party-bg {
   position: fixed;
   inset: 0;
