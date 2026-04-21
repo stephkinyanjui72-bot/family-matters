@@ -43,7 +43,13 @@ export async function installDeepLinkHandler() {
       const access_token = params.get("access_token") || "";
       const refresh_token = params.get("refresh_token") || "";
       const code = params.get("code") || "";
+      const type = params.get("type") || "";
       const errDesc = params.get("error_description") || params.get("error") || "";
+
+      // Route the user by URL path AFTER the session is established.
+      // recovery → password-reset form. Otherwise → home.
+      const isRecovery = type === "recovery" || rawUrl.includes("/auth/reset/confirm");
+      const targetPath = isRecovery ? "/auth/reset/confirm" : "/";
 
       if (errDesc) {
         console.error("[nativeAuth] oauth error:", errDesc);
@@ -52,33 +58,43 @@ export async function installDeepLinkHandler() {
       }
 
       const sb = getSupabase();
+      let sessionOk = false;
 
       if (access_token && refresh_token) {
-        console.log("[nativeAuth] setSession from implicit tokens");
+        console.log("[nativeAuth] setSession from implicit tokens", { type });
         const { error } = await sb.auth.setSession({ access_token, refresh_token });
         if (error) {
           console.error("[nativeAuth] setSession error:", error.message);
           window.dispatchEvent(new CustomEvent("native-auth-error", { detail: error.message }));
         } else {
-          console.log("[nativeAuth] session set ok");
+          sessionOk = true;
           window.dispatchEvent(new CustomEvent("native-auth-ok"));
         }
       } else if (code) {
-        console.log("[nativeAuth] exchangeCodeForSession(code)");
+        console.log("[nativeAuth] exchangeCodeForSession(code)", { type });
         const { error } = await sb.auth.exchangeCodeForSession(code);
         if (error) {
           console.error("[nativeAuth] exchange error:", error.message);
           window.dispatchEvent(new CustomEvent("native-auth-error", { detail: error.message }));
         } else {
-          console.log("[nativeAuth] exchange ok");
+          sessionOk = true;
           window.dispatchEvent(new CustomEvent("native-auth-ok"));
         }
       } else {
         console.warn("[nativeAuth] callback had no code or tokens");
       }
+
+      // Close the in-app browser overlay before navigating so the user
+      // lands fully inside the WebView.
+      try { await Browser.close(); } catch {}
+
+      if (sessionOk && isRecovery) {
+        // For a password-reset deep link, drop the user on the change-password
+        // form regardless of where they were.
+        try { window.location.replace(targetPath); } catch {}
+      }
     } catch (e) {
       console.error("[nativeAuth] handler threw:", e);
-    } finally {
       try { await Browser.close(); } catch {}
     }
   };

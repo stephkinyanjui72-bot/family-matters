@@ -24,6 +24,11 @@ export default function ResetConfirmPage() {
     const { error } = await sb.auth.updateUser({ password });
     setBusy(false);
     if (error) return setErr(error.message);
+    // Fire a global toast so the user gets a visible confirmation before
+    // we bounce them home.
+    try {
+      window.dispatchEvent(new CustomEvent("native-auth-ok", { detail: "Password updated" }));
+    } catch {}
     router.replace("/");
   };
 

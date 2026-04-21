@@ -2,6 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabaseClient";
+import { isNativeApp } from "@/lib/platform";
+import { NATIVE_SCHEME } from "@/lib/nativeAuth";
 
 export default function ResetRequestPage() {
   const [email, setEmail] = useState("");
@@ -16,9 +18,13 @@ export default function ResetRequestPage() {
     if (!email.trim()) return setErr("Enter your email");
     setBusy(true);
     const sb = getSupabase();
-    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/reset/confirm`,
-    });
+    // If requested from inside the app, point the email link at our custom
+    // scheme so clicking it in the phone's mail client opens the app (not
+    // a browser). Web users get the standard HTTPS callback.
+    const redirectTo = isNativeApp()
+      ? `${NATIVE_SCHEME}://auth/reset/confirm`
+      : `${window.location.origin}/auth/reset/confirm`;
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     setBusy(false);
     if (error) return setErr(error.message);
     setMsg("If that email has an account, a reset link is on its way.");
