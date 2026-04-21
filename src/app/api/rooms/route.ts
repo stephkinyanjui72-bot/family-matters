@@ -5,15 +5,26 @@ import type { Intensity } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// Create a new room. Now gated on an authenticated user — the client must
-// forward its current access token (from supabase.auth.getSession) in the
-// Authorization header. Body: { name, intensity }.
+// Create a new room. Gated on:
+//   1. The X-Party-Mate-Native: 1 header — only our Android app sends it
+//   2. A valid Supabase access token (Bearer) — signed-in user
+//   3. An 18+ age check from the user's profile
+// Body: { name, intensity }.
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const name = clampName(body.name, "Host");
   const intensity = (["mild", "spicy", "extreme", "chaos"].includes(body.intensity as string)
     ? body.intensity
     : "spicy") as Intensity;
+
+  // --- Platform check: hosting is native-app only ------------------------
+  const isNative = req.headers.get("x-party-mate-native") === "1";
+  if (!isNative) {
+    return NextResponse.json(
+      { ok: false, error: "Install the Android app to host a party" },
+      { status: 403 },
+    );
+  }
 
   // --- Auth check --------------------------------------------------------
   const authHeader = req.headers.get("authorization") || "";

@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getSupabase } from "./supabaseClient";
+import { isNativeApp } from "./platform";
 import type { Intensity, Room, GameId } from "./types";
 
 const LS_SESSION = "party:session";
@@ -226,16 +227,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [room?.code, pid]);
 
   const createRoom = useCallback<Ctx["createRoom"]>(async (name, intensity) => {
-    // Forward the Supabase access token so the server can verify the
-    // authenticated user + enforce the 18+/23+ age rules.
+    // Forward the Supabase access token (for auth) and the native-app flag
+    // (server rejects hosting from the web).
     const sb = getSupabase();
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) return { ok: false, error: "Sign in to host" };
+    if (!isNativeApp()) return { ok: false, error: "Install the Android app to host a party" };
     const res = await fetch(`/api/rooms`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
+        "X-Party-Mate-Native": "1",
       },
       body: JSON.stringify({ name, intensity }),
     }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));

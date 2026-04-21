@@ -94,7 +94,13 @@ function Login() {
           <Link href="/auth/reset" className="text-white/60 hover:text-white">Forgot password?</Link>
           <Link href="/auth/signup" className="text-flame hover:underline">Create account</Link>
         </div>
-        <Link href="/" className="text-center text-xs text-white/40 hover:text-white">← Back</Link>
+
+        <div className="pt-3 mt-1 border-t border-white/10 text-center">
+          <p className="text-xs text-white/50 mb-2">Just joining a friend's party?</p>
+          <Link href="/?guest=1" className="btn-ghost !py-2 !text-sm inline-flex">
+            📱 Join with a code
+          </Link>
+        </div>
       </div>
     </main>
   );

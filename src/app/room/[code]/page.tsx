@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QRCode from "qrcode";
-import { useStore } from "@/lib/store";
+import { clearStoredSession, useStore } from "@/lib/store";
 import { GAMES, CATEGORIES, type Category } from "@/lib/games";
 import type { Intensity } from "@/lib/types";
 import { GameScreen } from "@/components/GameScreen";
@@ -65,6 +65,33 @@ export default function RoomPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>("");
   const [filter, setFilter] = useState<Category | "all">("all");
+  const [intensityAck, setIntensityAck] = useState(false);
+
+  // If the room is an adult-tier (Extreme/Chaos) and the joiner hasn't
+  // confirmed for THIS code yet, we show a blocking consent modal below.
+  useEffect(() => {
+    if (!room) return;
+    const adult = room.intensity === "extreme" || room.intensity === "chaos";
+    if (!adult) { setIntensityAck(true); return; }
+    const key = `ack:${room.code}:${room.intensity}`;
+    try {
+      if (localStorage.getItem(key) === "1") setIntensityAck(true);
+      else setIntensityAck(false);
+    } catch {
+      setIntensityAck(false);
+    }
+  }, [room?.code, room?.intensity]);
+
+  const acceptIntensity = () => {
+    if (!room) return;
+    try { localStorage.setItem(`ack:${room.code}:${room.intensity}`, "1"); } catch {}
+    setIntensityAck(true);
+  };
+
+  const declineIntensity = () => {
+    clearStoredSession();
+    router.replace("/");
+  };
 
   useEffect(() => {
     if (!room && typeof window !== "undefined") {
@@ -101,14 +128,42 @@ export default function RoomPage() {
     );
   }
 
+  const tier = TIERS.find((t) => t.id === room.intensity)!;
+
+  // Adult-tier consent gate — blocks the whole room view until accepted.
+  const needsConsent = (room.intensity === "extreme" || room.intensity === "chaos") && !intensityAck;
+  if (needsConsent) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-sm w-full card-glow flex flex-col gap-4 pop-in border-rose-500/40">
+          <div className="text-center">
+            <div className="text-4xl mb-2">{tier.emoji}</div>
+            <h2 className="title text-2xl font-black">Adult tier room</h2>
+          </div>
+          <p className="text-sm text-white/80 leading-relaxed">
+            This party is set to <b className={`capitalize ${tier.hintText}`}>{tier.label}</b>.
+            Before continuing, please confirm:
+          </p>
+          <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
+            <li>You are <b>18 or older</b>.</li>
+            <li>You consent to explicit adult content during this session.</li>
+            <li>You can leave or swap to a milder tier at any time.</li>
+          </ul>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-ghost" onClick={declineIntensity}>Leave</button>
+            <button className="btn-primary" onClick={acceptIntensity}>Agree & Stay</button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (room.currentGame) return (
     <>
       <GameScreen />
       <ExitSessionButton />
     </>
   );
-
-  const tier = TIERS.find((t) => t.id === room.intensity)!;
 
   return (
     <main className="min-h-screen p-6 max-w-2xl mx-auto flex flex-col gap-6">

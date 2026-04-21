@@ -26,18 +26,31 @@ function Home() {
   const prefilled = params.get("code") || "";
   const { createRoom, joinRoom, room, authUser, authLoading, signOut } = useStore();
 
+  const guest = params.get("guest") === "1";
   const [mode, setMode] = useState<"start" | "host" | "join">(prefilled ? "join" : "start");
   const [name, setName] = useState("");
   const [code, setCode] = useState(prefilled);
   const [intensity, setIntensity] = useState<Intensity>("spicy");
+  const [joinerAdult, setJoinerAdult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [stuckCode, setStuckCode] = useState<string | null>(null);
   const [inApp, setInApp] = useState(false);
+  const [showLiabilityModal, setShowLiabilityModal] = useState(false);
 
   useEffect(() => {
     if (room) router.replace(`/room/${room.code}`);
   }, [room, router]);
+
+  // Entry gate: unauthenticated users get sent to login, UNLESS they arrived
+  // via a QR code (?code=XXXX) or explicitly chose the guest-join path
+  // (?guest=1). Those two flows let people join without an account.
+  useEffect(() => {
+    if (authLoading) return;
+    if (authUser) return;
+    if (prefilled || guest) return;
+    router.replace("/auth/login");
+  }, [authLoading, authUser, prefilled, guest, router]);
 
   useEffect(() => {
     try {
@@ -68,11 +81,18 @@ function Home() {
       router.push("/auth/login?next=/");
       return;
     }
+    if (!inApp) return setError("Install the Android app to host a party");
     if (!name.trim()) return setError("Enter your name");
+    // Adult-tier rooms require an explicit host affirmation first.
+    if ((intensity === "extreme" || intensity === "chaos") && !showLiabilityModal) {
+      setShowLiabilityModal(true);
+      return;
+    }
     setBusy(true);
     setError(null);
     const res = await createRoom(name.trim(), intensity);
     setBusy(false);
+    setShowLiabilityModal(false);
     if (!res.ok) return setError(res.error || "Could not host");
     if (res.code) router.push(`/room/${res.code}`);
   };
@@ -94,6 +114,7 @@ function Home() {
   const onJoin = async () => {
     if (!name.trim()) return setError("Enter your name");
     if (!code.trim()) return setError("Enter a room code");
+    if (!joinerAdult) return setError("You must confirm you're 18 or older");
     setBusy(true);
     setError(null);
     const res = await joinRoom(code.trim().toUpperCase(), name.trim());
@@ -147,18 +168,28 @@ function Home() {
 
       {mode === "start" && (
         <div className="w-full max-w-sm flex flex-col gap-3 pop-in">
-          <button
-            className="btn-primary text-xl h-16"
-            onClick={() => {
-              if (!authUser && !authLoading) {
-                router.push("/auth/login?next=/");
-                return;
-              }
-              setMode("host");
-            }}
-          >
-            🎉 Host a Party
-          </button>
+          {inApp ? (
+            <button
+              className="btn-primary text-xl h-16"
+              onClick={() => {
+                if (!authUser && !authLoading) {
+                  router.push("/auth/login?next=/");
+                  return;
+                }
+                setMode("host");
+              }}
+            >
+              🎉 Host a Party
+            </button>
+          ) : (
+            <a
+              href="/download"
+              className="btn-primary text-xl h-16 text-center flex flex-col justify-center leading-tight"
+            >
+              <span>📲 Host from the app</span>
+              <span className="text-[11px] font-normal opacity-80 uppercase tracking-widest">get the Android app</span>
+            </a>
+          )}
           <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>📱 Join with Code</button>
           {stuckCode && (
             <button
@@ -254,12 +285,59 @@ function Home() {
               placeholder="ABCD"
             />
           </label>
+          <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={joinerAdult}
+              onChange={(e) => setJoinerAdult(e.target.checked)}
+              className="mt-0.5 accent-flame w-4 h-4 shrink-0"
+            />
+            <span>
+              I confirm I am <b>18 or older</b> and understand this room may contain adult content.
+            </span>
+          </label>
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>
-            <button className="btn-primary flex-1" onClick={onJoin} disabled={busy}>
+            <button className="btn-primary flex-1" onClick={onJoin} disabled={busy || !joinerAdult}>
               {busy ? "…" : "Join"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Host liability modal — shown for Extreme / Chaos tiers at Start */}
+      {showLiabilityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="card-glow max-w-sm w-full flex flex-col gap-4 pop-in border-rose-500/40">
+            <div className="text-center">
+              <div className="text-4xl mb-2">⚠️</div>
+              <h3 className="title text-2xl font-black">Host responsibility</h3>
+            </div>
+            <p className="text-sm text-white/80 leading-relaxed">
+              You're about to host a <b className="text-flame capitalize">{intensity}</b> tier session.
+              By starting this party you confirm that:
+            </p>
+            <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
+              <li>Every player in the room is <b>18 or older</b>.</li>
+              <li>All players have consented to adult content in this session.</li>
+              <li>You take responsibility for who you invite and what happens during play.</li>
+            </ul>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className="btn-ghost"
+                onClick={() => setShowLiabilityModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary"
+                onClick={onHost}
+                disabled={busy}
+              >
+                {busy ? "…" : "Agree & Start"}
+              </button>
+            </div>
           </div>
         </div>
       )}
