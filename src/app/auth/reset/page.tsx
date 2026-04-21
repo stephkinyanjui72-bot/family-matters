@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabase } from "@/lib/supabaseClient";
 import { isNativeApp } from "@/lib/platform";
 import { NATIVE_SCHEME } from "@/lib/nativeAuth";
+import { Footer } from "@/components/Footer";
 
 export default function ResetRequestPage() {
   const [email, setEmail] = useState("");
@@ -56,6 +57,7 @@ export default function ResetRequestPage() {
           <Link href="/auth/login" className="text-white/60 hover:text-white">← Log in</Link>
           <Link href="/auth/signup" className="text-flame hover:underline">Create account</Link>
         </div>
+        <Footer />
       </div>
     </main>
   );

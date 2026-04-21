@@ -204,14 +204,41 @@ export default function RoomPage() {
           <div className="w-56 h-56 bg-white/5 rounded-2xl animate-pulse" />
         )}
         <div className="text-[11px] text-white/60 text-center break-all font-mono">{joinUrl}</div>
-        <button
-          className="chip border-white/20 text-white/80 hover:text-white hover:border-white/40 transition"
-          onClick={async () => {
-            try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
-          }}
-        >
-          {copied ? "✓ copied" : "📋 copy link"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="chip border-white/20 text-white/80 hover:text-white hover:border-white/40 transition"
+            onClick={async () => {
+              try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
+            }}
+          >
+            {copied ? "✓ copied" : "📋 copy link"}
+          </button>
+          {/* Web Share API: opens the native share sheet on mobile (WhatsApp,
+              SMS, AirDrop, …). Falls back silently if unsupported (desktop). */}
+          <button
+            className="chip border-flame/40 text-flame bg-flame/10 hover:bg-flame/20 transition"
+            onClick={async () => {
+              const nav = typeof navigator !== "undefined" ? (navigator as unknown as { share?: (d: ShareData) => Promise<void> }) : undefined;
+              if (nav?.share) {
+                try {
+                  await nav.share({
+                    title: "Party Mate",
+                    text: `Join my Party Mate session — code ${room.code}`,
+                    url: joinUrl,
+                  });
+                } catch { /* user cancelled */ }
+              } else {
+                // Desktop fallback: copy to clipboard
+                try {
+                  await navigator.clipboard.writeText(joinUrl);
+                  setCopied(true); setTimeout(() => setCopied(false), 1500);
+                } catch {}
+              }
+            }}
+          >
+            📤 share
+          </button>
+        </div>
       </section>
 
       <div className="section-frame">

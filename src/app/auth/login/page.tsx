@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabaseClient";
 import { useStore } from "@/lib/store";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
+import { Footer } from "@/components/Footer";
 
 export default function LoginPage() {
   return (
@@ -101,6 +102,7 @@ function Login() {
             📱 Join with a code
           </Link>
         </div>
+        <Footer />
       </div>
     </main>
   );

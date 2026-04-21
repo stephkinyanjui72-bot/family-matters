@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { clearStoredSession, peekSession, useStore } from "@/lib/store";
 import { isNativeApp } from "@/lib/platform";
+import { Footer } from "@/components/Footer";
 import type { Intensity } from "@/lib/types";
 
 const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string }[] = [
@@ -208,11 +209,9 @@ function Home() {
             </a>
           )}
           <p className="text-center text-white/40 text-xs mt-4 uppercase tracking-widest">
-            host on any device · others scan the QR · works over the internet
+            host in the app · others scan the QR · works over the internet
           </p>
-          <p className="text-center text-white/25 text-[10px] mt-1 font-mono">
-            build {process.env.NEXT_PUBLIC_BUILD_SHA}
-          </p>
+          <Footer />
         </div>
       )}
 

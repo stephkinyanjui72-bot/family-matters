@@ -3,13 +3,16 @@ import { useEffect, useState } from "react";
 import { StoreProvider } from "@/lib/store";
 import { ReconnectOverlay } from "@/components/ReconnectOverlay";
 import { installDeepLinkHandler } from "@/lib/nativeAuth";
+import { installBackButtonHandler } from "@/lib/nativeBack";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  // One-time: install the native-app deep-link listener. No-op on web.
+  // One-time: install native-app listeners (deep links + hardware back).
+  // Both are no-ops on web.
   useEffect(() => {
     installDeepLinkHandler();
+    installBackButtonHandler();
     const onOk = () => {
       setToast({ kind: "ok", text: "Signed in with Google" });
       setTimeout(() => setToast(null), 3000);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
+import { Footer } from "@/components/Footer";
 
 // Minimum age to create an account. Any 18+ account unlocks all tiers.
 const MIN_AGE = 18;
@@ -143,7 +144,7 @@ export default function SignupPage() {
         <div className="text-center text-sm text-white/60">
           Already have an account? <Link href="/auth/login" className="text-flame hover:underline">Log in</Link>
         </div>
-        <Link href="/" className="text-center text-xs text-white/40 hover:text-white">← Back</Link>
+        <Footer />
       </div>
     </main>
   );
