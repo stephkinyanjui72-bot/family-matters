@@ -25,6 +25,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,6 +39,7 @@ export default function SignupPage() {
     const age = yearsSince(birthdate);
     if (age < 0) return setErr("Birthdate invalid");
     if (age < MIN_AGE) return setErr(`You must be ${MIN_AGE}+ to use Party Mate`);
+    if (!acceptedTerms) return setErr("Accept the Terms and Privacy Policy to continue");
 
     setBusy(true);
     const sb = getSupabase();
@@ -109,9 +111,24 @@ export default function SignupPage() {
             <span className="text-[11px] text-white/45">18+ to sign up · 23+ unlocks Chaos tier</span>
           </label>
 
+          <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer mt-1">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 accent-flame w-4 h-4 shrink-0"
+            />
+            <span>
+              I'm 18+ and I agree to the{" "}
+              <Link href="/terms" className="text-flame hover:underline" target="_blank">Terms</Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="text-flame hover:underline" target="_blank">Privacy Policy</Link>.
+            </span>
+          </label>
+
           {err && <p className="text-rose-400 text-sm">{err}</p>}
 
-          <button className="btn-primary mt-1" disabled={busy}>
+          <button className="btn-primary mt-1" disabled={busy || !acceptedTerms}>
             {busy ? "Creating…" : "Create account"}
           </button>
         </form>

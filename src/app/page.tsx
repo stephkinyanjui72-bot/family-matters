@@ -201,37 +201,36 @@ function Home() {
           <div className="flex flex-col gap-2">
             <span className="text-sm text-white/60">Intensity</span>
             <div className="grid grid-cols-2 gap-2">
-              {INTENSITIES.map((t) => {
-                const locked = !availableTiers.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    disabled={locked}
-                    onClick={() => {
-                      if (t.gate) {
-                        const confirmed = localStorage.getItem(`ageOK:${t.gate}`) === "1";
-                        if (!confirmed) return setPendingGate(t.id);
-                      }
-                      setIntensity(t.id);
-                    }}
-                    className={`rounded-xl py-3 text-sm font-semibold border transition ${
-                      intensity === t.id
-                        ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
-                        : locked
-                        ? "bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
-                        : "bg-white/5 border-white/10 text-white/70"
-                    }`}
-                  >
-                    {locked && "🔒 "}{t.label}
-                  </button>
-                );
-              })}
+              {INTENSITIES.filter((t) => availableTiers.includes(t.id)).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    if (t.gate) {
+                      const confirmed = localStorage.getItem(`ageOK:${t.gate}`) === "1";
+                      if (!confirmed) return setPendingGate(t.id);
+                    }
+                    setIntensity(t.id);
+                  }}
+                  className={`rounded-xl py-3 text-sm font-semibold border transition ${
+                    intensity === t.id
+                      ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
+                      : "bg-white/5 border-white/10 text-white/70"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
             <p className="text-xs text-white/50">
               {availableTiers.includes(intensity)
                 ? INTENSITIES.find((t) => t.id === intensity)?.hint
-                : "Locked for your age tier"}
+                : "—"}
             </p>
+            {authUser?.ageTier === "18-22" && (
+              <p className="text-[11px] text-white/40">
+                Chaos tier available for 23+ accounts only.
+              </p>
+            )}
           </div>
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">

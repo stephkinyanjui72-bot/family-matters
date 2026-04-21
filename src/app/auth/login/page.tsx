@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
+import { useStore } from "@/lib/store";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
 
@@ -19,10 +20,18 @@ function Login() {
   const router = useRouter();
   const params = useSearchParams();
   const redirectTo = params.get("next") || "/";
+  const { authUser } = useStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Redirect home once the auth store picks up a session — covers both
+  // email/password (set synchronously by signInWithPassword) and native
+  // Google (set asynchronously by the deep-link handler).
+  useEffect(() => {
+    if (authUser) router.replace(redirectTo);
+  }, [authUser, redirectTo, router]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +45,7 @@ function Login() {
     });
     setBusy(false);
     if (error) return setErr(error.message);
-    router.replace(redirectTo);
+    // The useEffect above will redirect as soon as authUser hydrates.
   };
 
   return (
