@@ -11,6 +11,10 @@ import { SpinTheBottle } from "./games/SpinTheBottle";
 import { TwoTruths } from "./games/TwoTruths";
 import { HotSeat } from "./games/HotSeat";
 import { KissMarryAvoid } from "./games/KissMarryAvoid";
+import { Fictionary } from "./games/Fictionary";
+import { FiveSecond } from "./games/FiveSecond";
+import { ForbiddenPhrases } from "./games/ForbiddenPhrases";
+import { CheersToTheGovernor } from "./games/CheersToTheGovernor";
 
 export function GameScreen() {
   const { room, isHost, exitGame } = useStore();
@@ -54,6 +58,10 @@ function GameRouter() {
     case "two-truths-and-a-lie": return <TwoTruths />;
     case "hot-seat": return <HotSeat />;
     case "kiss-marry-avoid": return <KissMarryAvoid />;
+    case "fictionary": return <Fictionary />;
+    case "five-second": return <FiveSecond />;
+    case "forbidden-phrases": return <ForbiddenPhrases />;
+    case "cheers-to-the-governor": return <CheersToTheGovernor />;
     default: return null;
   }
 }

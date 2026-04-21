@@ -34,6 +34,10 @@ export const MIN_PLAYERS: Record<GameId, number> = {
   "two-truths-and-a-lie": 3,
   "hot-seat": 3,
   "kiss-marry-avoid": 2,
+  "fictionary": 3,
+  "five-second": 2,
+  "forbidden-phrases": 3,
+  "cheers-to-the-governor": 3,
 };
 
 export function initialGameState(gameId: GameId): unknown {
@@ -48,6 +52,34 @@ export function initialGameState(gameId: GameId): unknown {
     case "two-truths-and-a-lie": return { turnIndex: 0, statements: null, votes: {}, revealedLie: null };
     case "hot-seat": return { victimIndex: 0, prompt: null };
     case "kiss-marry-avoid": return { turnIndex: 0, options: null, choices: {} };
+    case "fictionary": return {
+      turnIndex: 0,
+      word: null,            // { word, definition } once drawn
+      submissions: {},       // pid -> fake definition
+      phase: "idle",         // idle | submit | vote | reveal
+      order: null,           // shuffled [{text, authorPid|'real'}] once we move to vote
+      votes: {},             // pid -> index into order
+    };
+    case "five-second": return {
+      turnIndex: 0,
+      prompt: null,
+      startedAt: null,       // ms timestamp — client derives 5-sec countdown
+      outcome: null,         // null | 'pass' | 'fail'
+    };
+    case "forbidden-phrases": return {
+      turnIndex: 0,
+      prompt: null,
+      forbidden: null,       // [word1, word2]
+      startedAt: null,
+      outcome: null,         // null | 'caught' | 'survived'
+    };
+    case "cheers-to-the-governor": return {
+      turnIndex: 0,
+      count: 0,              // last number counted; next turn says count+1
+      rules: {},             // { [num]: string }
+      pendingRule: false,    // true when someone just hit 21 and must add a rule
+      reached21: 0,          // how many full 1-21 rounds completed
+    };
   }
 }
 
@@ -265,6 +297,154 @@ export function reduceGame(
       }
       if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, options: null, choices: {} }, bags };
+      }
+      return null;
+    }
+    case "fictionary": {
+      // Reader is the current-turn player. They draw the word and read it aloud;
+      // everyone else submits a fake definition.
+      const reader = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        const word = p.word as { word?: string; definition?: string } | undefined;
+        if (!word?.word || !word.definition) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return {
+          gameState: { ...s, word: { word: String(word.word), definition: String(word.definition) }, submissions: {}, phase: "submit", order: null, votes: {} },
+          bags: nextBags,
+        };
+      }
+      if (action.type === "submit") {
+        if (actorPid === reader.id) return null;
+        const text = String(p.definition || "").slice(0, 200).trim();
+        if (!text) return null;
+        return { gameState: { ...s, submissions: { ...(s.submissions as object || {}), [actorPid]: text } }, bags };
+      }
+      if (action.type === "reveal") {
+        const subs = (s.submissions as Record<string, string>) || {};
+        const word = s.word as { word: string; definition: string } | null;
+        if (!word) return null;
+        // Fisher–Yates on [real, ...submissions]
+        const pool: Array<{ text: string; authorPid: string | "real" }> = [
+          { text: word.definition, authorPid: "real" },
+          ...Object.entries(subs).map(([pid, text]) => ({ text, authorPid: pid })),
+        ];
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        return { gameState: { ...s, phase: "vote", order: pool, votes: {} }, bags };
+      }
+      if (action.type === "vote") {
+        if (actorPid === reader.id) return null;
+        const idx = p.index as number;
+        const order = s.order as Array<{ authorPid: string }> | null;
+        if (!order || typeof idx !== "number" || idx < 0 || idx >= order.length) return null;
+        if (order[idx].authorPid === actorPid) return null; // can't vote for yourself
+        return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: idx } }, bags };
+      }
+      if (action.type === "tally") {
+        return { gameState: { ...s, phase: "reveal" }, bags };
+      }
+      if (action.type === "next") {
+        return {
+          gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, word: null, submissions: {}, phase: "idle", order: null, votes: {} },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "five-second": {
+      // `draw` locks to the current player — nobody draws for them.
+      const current = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid !== current.id) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return {
+          gameState: { ...s, prompt: String(p.prompt || ""), startedAt: Date.now(), outcome: null },
+          bags: nextBags,
+        };
+      }
+      if (action.type === "judge") {
+        const outcome = p.outcome as string;
+        if (!["pass", "fail"].includes(outcome)) return null;
+        return { gameState: { ...s, outcome }, bags };
+      }
+      if (action.type === "next") {
+        return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, prompt: null, startedAt: null, outcome: null }, bags };
+      }
+      return null;
+    }
+    case "forbidden-phrases": {
+      // Current player talks about the topic without saying either taboo word.
+      const speaker = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid !== speaker.id) return null;
+        const forbiddenArr = p.forbidden as unknown[];
+        if (!Array.isArray(forbiddenArr) || forbiddenArr.length !== 2) return null;
+        const nextBagsA = recordDrawn(bags, p.topicPoolKey as string, p.topicIndex as number, p.topicPoolSize as number);
+        const nextBagsB = recordDrawn(nextBagsA, p.forbiddenPoolKey as string, p.forbiddenIndex as number, p.forbiddenPoolSize as number);
+        return {
+          gameState: {
+            ...s,
+            prompt: String(p.topic || ""),
+            forbidden: [String(forbiddenArr[0]), String(forbiddenArr[1])],
+            startedAt: Date.now(),
+            outcome: null,
+          },
+          bags: nextBagsB,
+        };
+      }
+      if (action.type === "judge") {
+        const outcome = p.outcome as string;
+        if (!["caught", "survived"].includes(outcome)) return null;
+        return { gameState: { ...s, outcome }, bags };
+      }
+      if (action.type === "next") {
+        return {
+          gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, prompt: null, forbidden: null, startedAt: null, outcome: null },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "cheers-to-the-governor": {
+      // Current player says the next number. On 21, they earn a new rule slot.
+      const caller = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "seedRules") {
+        // Host or any player applies the starter rule pack on new game.
+        const rules = p.rules as Record<string, string> | undefined;
+        if (!rules || typeof rules !== "object") return null;
+        return { gameState: { ...s, rules }, bags };
+      }
+      if (action.type === "tick") {
+        // Caller advances the count by 1.
+        if (actorPid !== caller.id) return null;
+        const current = (s.count as number) || 0;
+        if (current >= 21) return null;
+        const next = current + 1;
+        if (next === 21) {
+          return { gameState: { ...s, count: 21, pendingRule: true, turnIndex: (((s.turnIndex as number) || 0) + 1) % n }, bags };
+        }
+        return { gameState: { ...s, count: next, turnIndex: (((s.turnIndex as number) || 0) + 1) % n }, bags };
+      }
+      if (action.type === "addRule") {
+        // Whoever hit 21 picks a number and rule, then count resets to 0.
+        if (!s.pendingRule) return null;
+        const num = p.number as number;
+        const rule = String(p.rule || "").slice(0, 200).trim();
+        if (!rule || typeof num !== "number" || num < 1 || num > 21) return null;
+        const rules = { ...((s.rules as Record<string, string>) || {}) };
+        rules[String(num)] = rule;
+        return { gameState: { ...s, rules, pendingRule: false, count: 0, reached21: ((s.reached21 as number) || 0) + 1 }, bags };
+      }
+      if (action.type === "skipRule") {
+        // Optional: 21-reacher declines to add a rule this round.
+        if (!s.pendingRule) return null;
+        return { gameState: { ...s, pendingRule: false, count: 0, reached21: ((s.reached21 as number) || 0) + 1 }, bags };
+      }
+      if (action.type === "mistake") {
+        // Somebody broke a rule → reset count, keep rules.
+        return { gameState: { ...s, count: 0, pendingRule: false }, bags };
       }
       return null;
     }

@@ -10,7 +10,11 @@ export type GameId =
   | "spin-the-bottle"
   | "two-truths-and-a-lie"
   | "hot-seat"
-  | "kiss-marry-avoid";
+  | "kiss-marry-avoid"
+  | "fictionary"
+  | "five-second"
+  | "forbidden-phrases"
+  | "cheers-to-the-governor";
 
 export interface Player {
   id: string;          // stable pid, survives reconnect
