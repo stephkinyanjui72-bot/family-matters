@@ -1,0 +1,63 @@
+import type { Intensity } from "../types";
+
+// Secret identities for the press-conference subject. Shown to everyone
+// EXCEPT the subject. The group asks questions treating them as this person.
+
+export const identities: Record<Intensity, string[]> = {
+  mild: [
+    "a reality TV contestant in their final week",
+    "a disgraced former mayor",
+    "a conspiracy-theorist podcast host",
+    "a child actor turned crypto bro",
+    "an astronaut who's been to Mars",
+    "a wedding planner who accidentally ruins weddings",
+    "a has-been boy band member starting over",
+    "a professional cat whisperer",
+    "a librarian with a secret criminal record",
+    "a TikTok psychic in legal trouble",
+    "a CEO of a failing soup company",
+    "a chess grandmaster who can't read",
+  ],
+  spicy: [
+    "a stripper-turned-CEO",
+    "a bachelorette who slept with the bachelor's brother",
+    "a dating-app CEO with a public scandal",
+    "a life coach whose clients all divorce",
+    "a cruise ship entertainer with groupies on every continent",
+    "a wedding officiant who seduces the bride's dad",
+    "a tennis pro sleeping with their student",
+    "a reality-show villain looking for redemption",
+    "a personal trainer with 30 exes who are all clients",
+    "a pickup artist who fell in love for the first time",
+    "a burlesque dancer at a retirement home",
+    "a matchmaker whose clients all end up hating them",
+  ],
+  extreme: [
+    "a porn director giving their first TED talk",
+    "a sex-positive nun",
+    "a dominatrix whose subs run multinational companies",
+    "a sex therapist who just got outed for sleeping with patients",
+    "a sugar baby suing their daddy for alimony",
+    "an OnlyFans star quitting for a political career",
+    "a professional cuckold trying to out-cuck their rival",
+    "a polyamorous marriage counselor getting divorced",
+    "a stripper hired to entertain the Queen",
+    "a sex coach whose ex wrote a tell-all memoir",
+    "a dungeon master (both kinds) at the same con",
+    "a cam model running for school board",
+  ],
+  chaos: [
+    "a demon who specializes in orgasm-based soul collection",
+    "a minor pop star with a surprisingly detailed sex dungeon",
+    "an AI girlfriend becoming sentient on stream",
+    "a tantra priest on a very public crisis of faith",
+    "a dominatrix who accidentally married their sub at Burning Man",
+    "a sex-cult founder running for mayor",
+    "a ghost who only haunts sex parties",
+    "a time-traveler stuck in an orgy in 1974",
+    "a sex-tape editor suing their clients for bad performance",
+    "a latex fetish convention's keynote speaker who just lost their voice",
+    "a confession-booth priest who runs an OnlyFans",
+    "a robot built to replace a cheating husband",
+  ],
+};

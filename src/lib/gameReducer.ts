@@ -43,6 +43,11 @@ export const MIN_PLAYERS: Record<GameId, number> = {
   "ghost": 3,
   "name-game": 3,
   "rapid-fire": 3,
+  "press-conference": 4,
+  "hows-yours": 4,
+  "sorry-im-late": 4,
+  "the-jar": 3,
+  "say-the-same-thing": 3,
 };
 
 export function initialGameState(gameId: GameId): unknown {
@@ -110,6 +115,35 @@ export function initialGameState(gameId: GameId): unknown {
       prompts: null,         // string[] shown during the round
       startedAt: null,
       outcome: null,         // 'survived' | 'drank'
+    };
+    case "press-conference": return {
+      subjectIndex: 0,       // person being interviewed
+      identity: null,        // string, hidden from subject client-side
+      phase: "idle",         // idle | playing | reveal
+    };
+    case "hows-yours": return {
+      guesserIndex: 0,       // the one asking "how's yours?"
+      topic: null,           // hidden from guesser
+      phase: "idle",
+    };
+    case "sorry-im-late": return {
+      lateIndex: 0,          // player who's "late"
+      reason: null,          // hidden from late player
+      phase: "idle",
+    };
+    case "the-jar": return {
+      phase: "submit",       // submit | reading | done
+      submissions: {},       // pid -> confession text
+      order: null,           // shuffled [{authorPid, text}]
+      readIndex: 0,          // which confession we're on
+      votes: {},             // string(readIndex) -> { voterPid -> guessedPid }
+      revealed: false,       // current confession author revealed
+    };
+    case "say-the-same-thing": return {
+      pairIndex: 0,          // rotates pair; pairA = 2*pairIndex, pairB = 2*pairIndex+1
+      submissions: {},       // pid -> latest word for current round
+      history: [],           // [{ a: {pid,word}, b: {pid,word} }]
+      phase: "submit",       // submit | reveal | won
     };
   }
 }
@@ -587,6 +621,136 @@ export function reduceGame(
       }
       if (action.type === "next") {
         return { gameState: { ...s, victimIndex: (((s.victimIndex as number) || 0) + 1) % n, prompts: null, startedAt: null, outcome: null }, bags };
+      }
+      return null;
+    }
+    case "press-conference": {
+      const subject = room.players[((s.subjectIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid === subject.id) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, identity: String(p.identity || ""), phase: "playing" }, bags: nextBags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, phase: "reveal" }, bags };
+      if (action.type === "next") {
+        return { gameState: { ...s, subjectIndex: (((s.subjectIndex as number) || 0) + 1) % n, identity: null, phase: "idle" }, bags };
+      }
+      return null;
+    }
+    case "hows-yours": {
+      const guesser = room.players[((s.guesserIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid === guesser.id) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, topic: String(p.topic || ""), phase: "playing" }, bags: nextBags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, phase: "reveal" }, bags };
+      if (action.type === "next") {
+        return { gameState: { ...s, guesserIndex: (((s.guesserIndex as number) || 0) + 1) % n, topic: null, phase: "idle" }, bags };
+      }
+      return null;
+    }
+    case "sorry-im-late": {
+      const late = room.players[((s.lateIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid === late.id) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, reason: String(p.reason || ""), phase: "playing" }, bags: nextBags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, phase: "reveal" }, bags };
+      if (action.type === "next") {
+        return { gameState: { ...s, lateIndex: (((s.lateIndex as number) || 0) + 1) % n, reason: null, phase: "idle" }, bags };
+      }
+      return null;
+    }
+    case "the-jar": {
+      if (action.type === "submit") {
+        if (s.phase !== "submit") return null;
+        const text = String(p.text || "").slice(0, 220).trim();
+        if (!text) return null;
+        return {
+          gameState: { ...s, submissions: { ...(s.submissions as object || {}), [actorPid]: text } },
+          bags,
+        };
+      }
+      if (action.type === "startReading") {
+        if (s.phase !== "submit") return null;
+        const subs = (s.submissions as Record<string, string>) || {};
+        const entries = Object.entries(subs).map(([pid, text]) => ({ authorPid: pid, text }));
+        if (entries.length < 2) return null;
+        for (let i = entries.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [entries[i], entries[j]] = [entries[j], entries[i]];
+        }
+        return { gameState: { ...s, phase: "reading", order: entries, readIndex: 0, votes: {}, revealed: false }, bags };
+      }
+      if (action.type === "vote") {
+        if (s.phase !== "reading") return null;
+        const guessed = p.playerId as string;
+        if (!guessed || !room.players.some((pl) => pl.id === guessed)) return null;
+        const readIdx = String((s.readIndex as number) || 0);
+        const allVotes = { ...((s.votes as Record<string, Record<string, string>>) || {}) };
+        const perRead = { ...(allVotes[readIdx] || {}) };
+        perRead[actorPid] = guessed;
+        allVotes[readIdx] = perRead;
+        return { gameState: { ...s, votes: allVotes }, bags };
+      }
+      if (action.type === "revealOne") {
+        if (s.phase !== "reading") return null;
+        return { gameState: { ...s, revealed: true }, bags };
+      }
+      if (action.type === "nextConfession") {
+        if (s.phase !== "reading") return null;
+        const order = s.order as Array<{ authorPid: string; text: string }> | null;
+        if (!order) return null;
+        const nextIdx = ((s.readIndex as number) || 0) + 1;
+        if (nextIdx >= order.length) {
+          return { gameState: { ...s, phase: "done", revealed: true }, bags };
+        }
+        return { gameState: { ...s, readIndex: nextIdx, revealed: false }, bags };
+      }
+      if (action.type === "reset") {
+        return {
+          gameState: { phase: "submit", submissions: {}, order: null, readIndex: 0, votes: {}, revealed: false },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "say-the-same-thing": {
+      const pairIdx = (s.pairIndex as number) || 0;
+      const a = room.players[(pairIdx * 2) % n];
+      const b = room.players[(pairIdx * 2 + 1) % n];
+      const amA = actorPid === a.id;
+      const amB = actorPid === b.id && a.id !== b.id;
+      if (action.type === "submit") {
+        if (!amA && !amB) return null;
+        const word = String(p.word || "").slice(0, 40).trim();
+        if (!word) return null;
+        const subs = { ...((s.submissions as Record<string, string>) || {}) };
+        subs[actorPid] = word;
+        // If both players submitted, advance phase to reveal.
+        const bothIn = subs[a.id] && subs[b.id] && a.id !== b.id;
+        return { gameState: { ...s, submissions: subs, phase: bothIn ? "reveal" : "submit" }, bags };
+      }
+      if (action.type === "tally") {
+        if (s.phase !== "reveal") return null;
+        const subs = (s.submissions as Record<string, string>) || {};
+        const wa = (subs[a.id] || "").toLowerCase();
+        const wb = (subs[b.id] || "").toLowerCase();
+        const matched = wa && wa === wb;
+        const history = Array.isArray(s.history) ? [...(s.history as Array<{ a: { pid: string; word: string }; b: { pid: string; word: string } }>)] : [];
+        history.push({ a: { pid: a.id, word: subs[a.id] || "" }, b: { pid: b.id, word: subs[b.id] || "" } });
+        return {
+          gameState: { ...s, history, submissions: {}, phase: matched ? "won" : "submit" },
+          bags,
+        };
+      }
+      if (action.type === "giveUp") {
+        return { gameState: { ...s, submissions: {}, history: [], phase: "submit", pairIndex: (pairIdx + 1) % Math.max(1, Math.floor(n / 2)) }, bags };
+      }
+      if (action.type === "nextPair") {
+        return { gameState: { ...s, submissions: {}, history: [], phase: "submit", pairIndex: (pairIdx + 1) % Math.max(1, Math.floor(n / 2)) }, bags };
       }
       return null;
     }

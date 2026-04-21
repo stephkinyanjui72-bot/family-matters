@@ -28,6 +28,11 @@ export const GAMES: GameMeta[] = [
   { id: "ghost", name: "Ghost", blurb: "Add a letter. Don't complete a word.", emoji: "👻", minPlayers: 3 },
   { id: "name-game", name: "The Name Game", blurb: "Celebrity chain. Fail = drink.", emoji: "🎬", minPlayers: 3 },
   { id: "rapid-fire", name: "Rapid Fire", blurb: "Hot seat. 30 seconds of questions.", emoji: "🔫", minPlayers: 3 },
+  { id: "press-conference", name: "The Press Conference", blurb: "Answer as a secret identity.", emoji: "🎤", minPlayers: 4 },
+  { id: "hows-yours", name: "How's Yours?", blurb: "Guess the shared topic.", emoji: "👀", minPlayers: 4 },
+  { id: "sorry-im-late", name: "Sorry I'm Late", blurb: "Improvise your way out of it.", emoji: "🚪", minPlayers: 4 },
+  { id: "the-jar", name: "The Jar", blurb: "Anonymous confessions. Guess whose.", emoji: "🏺", minPlayers: 3 },
+  { id: "say-the-same-thing", name: "Say The Same Thing", blurb: "Two minds, one word. Converge.", emoji: "🧠", minPlayers: 3 },
 ];
 
 export const GAMES_BY_ID: Record<GameId, GameMeta> = Object.fromEntries(

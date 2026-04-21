@@ -20,6 +20,11 @@ import { AlphabetStory } from "./games/AlphabetStory";
 import { Ghost } from "./games/Ghost";
 import { NameGame } from "./games/NameGame";
 import { RapidFire } from "./games/RapidFire";
+import { PressConference } from "./games/PressConference";
+import { HowsYours } from "./games/HowsYours";
+import { SorryImLate } from "./games/SorryImLate";
+import { TheJar } from "./games/TheJar";
+import { SayTheSameThing } from "./games/SayTheSameThing";
 
 export function GameScreen() {
   const { room, isHost, exitGame } = useStore();
@@ -72,6 +77,11 @@ function GameRouter() {
     case "ghost": return <Ghost />;
     case "name-game": return <NameGame />;
     case "rapid-fire": return <RapidFire />;
+    case "press-conference": return <PressConference />;
+    case "hows-yours": return <HowsYours />;
+    case "sorry-im-late": return <SorryImLate />;
+    case "the-jar": return <TheJar />;
+    case "say-the-same-thing": return <SayTheSameThing />;
     default: return null;
   }
 }

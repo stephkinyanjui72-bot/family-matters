@@ -19,7 +19,12 @@ export type GameId =
   | "alphabet-story"
   | "ghost"
   | "name-game"
-  | "rapid-fire";
+  | "rapid-fire"
+  | "press-conference"
+  | "hows-yours"
+  | "sorry-im-late"
+  | "the-jar"
+  | "say-the-same-thing";
 
 export interface Player {
   id: string;          // stable pid, survives reconnect
