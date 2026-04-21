@@ -3,6 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
+import { PasswordField } from "@/components/PasswordField";
+import { GoogleButton } from "@/components/GoogleButton";
 
 // Minimum age to create an account. Chaos tier still requires 23+.
 const MIN_AGE = 18;
@@ -88,13 +90,11 @@ export default function SignupPage() {
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm text-white/70">Password</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="bg-white/5 border border-white/15 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 focus:border-flame/40"
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               placeholder="At least 8 characters"
+              autoComplete="new-password"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -115,6 +115,13 @@ export default function SignupPage() {
             {busy ? "Creating…" : "Create account"}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-1">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-[10px] uppercase tracking-widest text-white/40">or</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+        <GoogleButton redirectTo="/" />
 
         <div className="text-center text-sm text-white/60">
           Already have an account? <Link href="/auth/login" className="text-flame hover:underline">Log in</Link>

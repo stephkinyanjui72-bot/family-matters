@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
+import { PasswordField } from "@/components/PasswordField";
+import { GoogleButton } from "@/components/GoogleButton";
 
 export default function LoginPage() {
   return (
@@ -58,12 +60,10 @@ function Login() {
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm text-white/70">Password</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              className="bg-white/5 border border-white/15 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 focus:border-flame/40"
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
+              autoComplete="current-password"
             />
           </label>
 
@@ -73,6 +73,13 @@ function Login() {
             {busy ? "Signing in…" : "Log in"}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-1">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-[10px] uppercase tracking-widest text-white/40">or</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+        <GoogleButton redirectTo={redirectTo} />
 
         <div className="flex items-center justify-between text-sm">
           <Link href="/auth/reset" className="text-white/60 hover:text-white">Forgot password?</Link>

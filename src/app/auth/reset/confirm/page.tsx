@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
+import { PasswordField } from "@/components/PasswordField";
 
 // Landing page for the password-reset email link. Supabase places the user
 // into a recovery session via the URL fragment; we just call updateUser.
@@ -36,23 +37,11 @@ export default function ResetConfirmPage() {
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-sm text-white/70">New password</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="bg-white/5 border border-white/15 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 focus:border-flame/40"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <PasswordField value={password} onChange={setPassword} autoComplete="new-password" />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm text-white/70">Confirm</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="bg-white/5 border border-white/15 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 focus:border-flame/40"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
+            <PasswordField value={confirm} onChange={setConfirm} autoComplete="new-password" />
           </label>
           {err && <p className="text-rose-400 text-sm">{err}</p>}
           <button className="btn-primary" disabled={busy}>{busy ? "Updating…" : "Update password"}</button>
