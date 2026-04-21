@@ -1,52 +1,90 @@
 "use client";
 // Handles native deep-link OAuth completion. When Supabase redirects
 // to our custom scheme (com.familymatters.party://auth/callback) with
-// access + refresh tokens in the URL fragment, Android routes it to
-// the app, we parse the tokens, and hand them to Supabase so the
-// WebView becomes authenticated.
+// a session code (PKCE) or access+refresh tokens (implicit), Android
+// routes that URL to the app; this handler reads the payload and hands
+// it to Supabase so the WebView becomes authenticated.
 
 import { isNativeApp } from "./platform";
 import { getSupabase } from "./supabaseClient";
 
-export const NATIVE_CALLBACK = "com.familymatters.party://auth/callback";
+export const NATIVE_SCHEME = "com.familymatters.party";
+export const NATIVE_CALLBACK = `${NATIVE_SCHEME}://auth/callback`;
 
 let installed = false;
+
+// Pull both ?query and #fragment params into a single URLSearchParams.
+function extractParams(rawUrl: string): URLSearchParams {
+  // Replace our custom scheme with a dummy https so URL() can parse it.
+  const normalized = rawUrl.replace(/^com\.familymatters\.party:\/\//, "https://_native/");
+  const u = new URL(normalized);
+  const params = new URLSearchParams(u.search);
+  if (u.hash) {
+    const frag = new URLSearchParams(u.hash.replace(/^#/, ""));
+    frag.forEach((v, k) => params.set(k, v));
+  }
+  return params;
+}
 
 export async function installDeepLinkHandler() {
   if (installed || !isNativeApp()) return;
   installed = true;
 
-  // Dynamic import so the web bundle doesn't try to pull in native plugins.
   const { App } = await import("@capacitor/app");
   const { Browser } = await import("@capacitor/browser");
 
   const handle = async (rawUrl: string) => {
+    // Log so these show up under Chrome's chrome://inspect WebView panel.
+    console.log("[nativeAuth] appUrlOpen:", rawUrl);
+    if (!rawUrl || !rawUrl.startsWith(`${NATIVE_SCHEME}://`)) return;
+
     try {
-      if (!rawUrl || !rawUrl.startsWith("com.familymatters.party://")) return;
-      // Fragment is the OAuth payload: #access_token=…&refresh_token=…
-      const hashIdx = rawUrl.indexOf("#");
-      const queryIdx = rawUrl.indexOf("?");
-      const frag = hashIdx >= 0 ? rawUrl.slice(hashIdx + 1) : "";
-      const query = queryIdx >= 0 && (hashIdx < 0 || queryIdx < hashIdx) ? rawUrl.slice(queryIdx + 1, hashIdx >= 0 ? hashIdx : undefined) : "";
-      const params = new URLSearchParams(frag || query);
+      const params = extractParams(rawUrl);
       const access_token = params.get("access_token") || "";
       const refresh_token = params.get("refresh_token") || "";
       const code = params.get("code") || "";
-      const sb = getSupabase();
-      if (access_token && refresh_token) {
-        await sb.auth.setSession({ access_token, refresh_token });
-      } else if (code) {
-        await sb.auth.exchangeCodeForSession(rawUrl);
+      const errDesc = params.get("error_description") || params.get("error") || "";
+
+      if (errDesc) {
+        console.error("[nativeAuth] oauth error:", errDesc);
+        window.dispatchEvent(new CustomEvent("native-auth-error", { detail: errDesc }));
+        return;
       }
+
+      const sb = getSupabase();
+
+      if (access_token && refresh_token) {
+        console.log("[nativeAuth] setSession from implicit tokens");
+        const { error } = await sb.auth.setSession({ access_token, refresh_token });
+        if (error) {
+          console.error("[nativeAuth] setSession error:", error.message);
+          window.dispatchEvent(new CustomEvent("native-auth-error", { detail: error.message }));
+        } else {
+          console.log("[nativeAuth] session set ok");
+          window.dispatchEvent(new CustomEvent("native-auth-ok"));
+        }
+      } else if (code) {
+        console.log("[nativeAuth] exchangeCodeForSession(code)");
+        const { error } = await sb.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error("[nativeAuth] exchange error:", error.message);
+          window.dispatchEvent(new CustomEvent("native-auth-error", { detail: error.message }));
+        } else {
+          console.log("[nativeAuth] exchange ok");
+          window.dispatchEvent(new CustomEvent("native-auth-ok"));
+        }
+      } else {
+        console.warn("[nativeAuth] callback had no code or tokens");
+      }
+    } catch (e) {
+      console.error("[nativeAuth] handler threw:", e);
     } finally {
       try { await Browser.close(); } catch {}
     }
   };
 
-  // Deep link arriving while app is already running
   App.addListener("appUrlOpen", (event) => { handle(event.url); });
 
-  // Cold-start deep link — app was launched via the URL directly
   const launch = await App.getLaunchUrl();
   if (launch?.url) handle(launch.url);
 }
