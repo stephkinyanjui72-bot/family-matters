@@ -1,64 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <!-- Background gradient — flame -> ember -> neon, brand palette -->
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"   stop-color="#ff3d6e"/>
-      <stop offset="55%"  stop-color="#ff8a3d"/>
-      <stop offset="100%" stop-color="#b46bff"/>
+    <!-- Background: rich flame → ember → violet gradient, aligned to canvas -->
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="1024">
+      <stop offset="0%"   stop-color="#ff2d5d"/>
+      <stop offset="55%"  stop-color="#ff7a2a"/>
+      <stop offset="100%" stop-color="#a34eff"/>
     </linearGradient>
 
-    <!-- Subtle inner highlight at top-left for a soft "glass" feel -->
-    <radialGradient id="sheen" cx="25%" cy="15%" r="70%">
-      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="60%"  stop-color="#ffffff" stop-opacity="0"/>
+    <!-- Top-left pearl sheen for glass depth -->
+    <radialGradient id="sheen" cx="22%" cy="15%" r="75%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Text fill: bright white with the faintest warm tint -->
-    <linearGradient id="text-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+    <!-- Bottom-right warm shadow to add depth -->
+    <radialGradient id="shade" cx="85%" cy="90%" r="65%">
+      <stop offset="0%"  stop-color="#2a0014" stop-opacity="0.35"/>
+      <stop offset="75%" stop-color="#2a0014" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle highlight gradient on the P for a 3D feel -->
+    <linearGradient id="p-fill" gradientUnits="userSpaceOnUse" x1="0" y1="180" x2="0" y2="870">
       <stop offset="0%"   stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#fff6e6"/>
+      <stop offset="70%"  stop-color="#fff2df"/>
+      <stop offset="100%" stop-color="#ffd9b8"/>
     </linearGradient>
 
-    <!-- Drop shadow for the wordmark -->
-    <filter id="wordmark-shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1a0516" flood-opacity="0.38"/>
+    <!-- Soft drop shadow for the P glyph -->
+    <filter id="p-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1a0014" flood-opacity="0.45"/>
     </filter>
   </defs>
 
-  <!-- Rounded-square app-icon shape (iOS-safe radius) -->
+  <!-- Rounded-square icon canvas (iOS-safe radius) -->
   <rect width="1024" height="1024" rx="220" ry="220" fill="url(#bg)"/>
   <rect width="1024" height="1024" rx="220" ry="220" fill="url(#sheen)"/>
+  <rect width="1024" height="1024" rx="220" ry="220" fill="url(#shade)"/>
 
-  <!-- Scattered confetti dots — static, just for personality -->
-  <g opacity="0.55">
-    <circle cx="140" cy="190" r="10" fill="#ffffff"/>
-    <circle cx="880" cy="150" r="14" fill="#ffffff"/>
-    <circle cx="930" cy="860" r="9"  fill="#ffffff"/>
-    <circle cx="120" cy="880" r="13" fill="#ffffff"/>
-    <circle cx="820" cy="520" r="7"  fill="#ffffff" opacity="0.8"/>
-    <circle cx="210" cy="520" r="6"  fill="#ffffff" opacity="0.8"/>
-    <!-- Tiny sparkle x-shapes -->
-    <g fill="#fff">
-      <path d="M 780 270 l 12 0 l 0 -12 l 8 0 l 0 12 l 12 0 l 0 8 l -12 0 l 0 12 l -8 0 l 0 -12 l -12 0 z"/>
-      <path d="M 160 680 l 10 0 l 0 -10 l 6 0 l 0 10 l 10 0 l 0 6 l -10 0 l 0 10 l -6 0 l 0 -10 l -10 0 z"/>
+  <!-- Scattered confetti -->
+  <g fill="#ffffff">
+    <circle cx="120"  cy="170"  r="11" opacity="0.75"/>
+    <circle cx="890"  cy="130"  r="14" opacity="0.65"/>
+    <circle cx="920"  cy="880"  r="10" opacity="0.7"/>
+    <circle cx="140"  cy="900"  r="13" opacity="0.7"/>
+    <circle cx="820"  cy="700"  r="7"  opacity="0.8"/>
+    <circle cx="200"  cy="620"  r="6"  opacity="0.8"/>
+    <!-- Plus sparkle crosses -->
+    <g opacity="0.85">
+      <path d="M 790 270 l 12 0 l 0 -12 l 8 0 l 0 12 l 12 0 l 0 8 l -12 0 l 0 12 l -8 0 l 0 -12 l -12 0 z"/>
+      <path d="M 170 760 l 10 0 l 0 -10 l 6 0 l 0 10 l 10 0 l 0 6 l -10 0 l 0 10 l -6 0 l 0 -10 l -10 0 z"/>
     </g>
   </g>
 
-  <!-- Wordmark: PARTY stacked over MATE, bold, centered -->
-  <g
-    font-family="Unbounded, 'Segoe UI', Impact, 'Arial Black', sans-serif"
-    font-weight="900"
-    fill="url(#text-fill)"
-    text-anchor="middle"
-    filter="url(#wordmark-shadow)"
-  >
-    <text x="512" y="468" font-size="210" letter-spacing="6">PARTY</text>
-    <text x="512" y="720" font-size="210" letter-spacing="16">MATE</text>
+  <!-- Chunky custom "P" (not text — drawn as path so it renders identically everywhere) -->
+  <g filter="url(#p-shadow)">
+    <path fill="url(#p-fill)" d="
+      M 230 170
+      L 590 170
+      C 790 170, 790 570, 590 570
+      L 410 570
+      L 410 870
+      L 230 870
+      Z
+    "/>
+    <!-- Hole in the P (filled with bg so it shows the gradient through) -->
+    <ellipse cx="510" cy="372" rx="118" ry="92" fill="url(#bg)"/>
   </g>
 
-  <!-- Small 23+ adult-content ribbon tucked under the wordmark -->
-  <g text-anchor="middle" font-family="Unbounded, 'Segoe UI', sans-serif" font-weight="800">
-    <rect x="416" y="800" width="192" height="56" rx="28" fill="#1a0516" opacity="0.35"/>
-    <text x="512" y="838" fill="#ffffff" font-size="30" letter-spacing="10" opacity="0.9">23+ READY</text>
+  <!-- A tiny crown-style sparkle above the P to signal "party" -->
+  <g fill="#ffffff" opacity="0.9">
+    <path d="M 720 740 l 16 0 l 0 -16 l 10 0 l 0 16 l 16 0 l 0 10 l -16 0 l 0 16 l -10 0 l 0 -16 l -16 0 z"/>
   </g>
 </svg>

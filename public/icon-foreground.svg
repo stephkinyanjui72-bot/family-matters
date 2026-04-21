@@ -1,25 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Transparent-background version of the wordmark — used for Android
-       adaptive-icon foreground layer. The launcher applies its own shape
-       mask (circle / rounded square / squircle) on top. -->
+  <!-- Transparent-background version of the P glyph for Android adaptive
+       icons. The launcher applies its own shape mask around this. -->
   <defs>
-    <linearGradient id="text-fill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#fff6e6"/>
+    <linearGradient id="bg-ref" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="1024">
+      <stop offset="0%"   stop-color="#ff2d5d"/>
+      <stop offset="55%"  stop-color="#ff7a2a"/>
+      <stop offset="100%" stop-color="#a34eff"/>
     </linearGradient>
-    <filter id="wordmark-shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1a0516" flood-opacity="0.45"/>
+    <linearGradient id="p-fill" gradientUnits="userSpaceOnUse" x1="0" y1="180" x2="0" y2="870">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="70%"  stop-color="#fff2df"/>
+      <stop offset="100%" stop-color="#ffd9b8"/>
+    </linearGradient>
+    <filter id="p-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1a0014" flood-opacity="0.5"/>
     </filter>
   </defs>
 
-  <g
-    font-family="Unbounded, 'Segoe UI', Impact, 'Arial Black', sans-serif"
-    font-weight="900"
-    fill="url(#text-fill)"
-    text-anchor="middle"
-    filter="url(#wordmark-shadow)"
-  >
-    <text x="512" y="468" font-size="210" letter-spacing="6">PARTY</text>
-    <text x="512" y="720" font-size="210" letter-spacing="16">MATE</text>
+  <g filter="url(#p-shadow)">
+    <path fill="url(#p-fill)" d="
+      M 230 170
+      L 590 170
+      C 790 170, 790 570, 590 570
+      L 410 570
+      L 410 870
+      L 230 870
+      Z
+    "/>
+    <!-- Hole — same gradient reference so it blends when overlaid on the bg -->
+    <ellipse cx="510" cy="372" rx="118" ry="92" fill="url(#bg-ref)"/>
   </g>
 </svg>
