@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Adaptive-icon background color: visible around the foreground when
+         Android's launcher applies a circular/squircle mask. Chosen to match
+         the brand flame→ember→neon gradient center-point. -->
+    <color name="ic_launcher_background">#FF6A5C</color>
 </resources>
