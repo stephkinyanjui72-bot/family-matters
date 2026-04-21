@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabaseServer";
 import { canStartGame, loadRoomSnapshot } from "../../../_lib/roomHelpers";
 import { initialGameState } from "@/lib/gameReducer";
+import { GAMES_BY_ID } from "@/lib/games";
 import type { GameId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_GAMES: GameId[] = [
-  "truth-or-dare","do-or-drink","never-have-i-ever","most-likely-to","would-you-rather",
-  "paranoia","spin-the-bottle","two-truths-and-a-lie","hot-seat","kiss-marry-avoid",
-];
+// Single source of truth: any game registered in games.ts is valid. This
+// avoids the out-of-sync bug where new games in games.ts weren't whitelisted
+// here and silently returned 400.
+const VALID_GAMES = new Set<GameId>(Object.keys(GAMES_BY_ID) as GameId[]);
 
 // Host-only: select a game.
 export async function POST(req: Request, { params }: { params: { code: string } }) {
@@ -17,7 +18,7 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const pid = String(body.pid || "");
   const gameId = body.gameId as GameId;
-  if (!VALID_GAMES.includes(gameId)) {
+  if (!VALID_GAMES.has(gameId)) {
     return NextResponse.json({ ok: false, error: "Bad gameId" }, { status: 400 });
   }
 
