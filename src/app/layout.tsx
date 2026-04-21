@@ -3,13 +3,13 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Family Matters — Party Games",
-  description: "10 freaky party games for your next night in.",
+  title: "Party Mate — Party Games",
+  description: "27 party games for your next wild night.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Family Matters",
+    title: "Party Mate",
   },
   icons: {
     icon: "/icon.svg",

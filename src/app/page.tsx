@@ -88,7 +88,7 @@ function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
       <div className="text-center pop-in">
         <div className="text-7xl mb-3 float-slow">🔥</div>
-        <h1 className="title text-5xl font-black holo-text">FAMILY MATTERS</h1>
+        <h1 className="title text-5xl font-black holo-text">PARTY MATE</h1>
         <p className="text-white/60 mt-2 uppercase tracking-[0.3em] text-xs">10 freaky games · one wild night</p>
       </div>
 

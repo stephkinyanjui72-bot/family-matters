@@ -6,11 +6,11 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // deploys, no re-APK needed.
 
 const config: CapacitorConfig = {
-  appId: "com.familymatters.party",
-  appName: "Family Matters",
+  appId: "com.familymatters.party",  // kept stable — changing would orphan existing installs
+  appName: "Party Mate",
   webDir: "public",
   server: {
-    url: "https://family-matters-taupe.vercel.app",
+    url: "https://family-matters-taupe.vercel.app",  // kept stable — changes would break live QR codes
     cleartext: false,
     androidScheme: "https",
   },

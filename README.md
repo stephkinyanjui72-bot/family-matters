@@ -1,4 +1,4 @@
-# Family Matters — Party Games
+# Party Mate — Party Games
 
 A LAN party-game web app. One phone/laptop hosts, everyone else scans a QR code to join. Works on iOS, Android, and desktop browsers.
 

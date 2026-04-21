@@ -1,4 +1,4 @@
--- Family Matters — initial schema
+-- Party Mate — initial schema
 -- Run once in Supabase SQL editor to bootstrap the database.
 
 -- ============================================================================

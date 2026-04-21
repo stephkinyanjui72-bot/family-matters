@@ -54,12 +54,12 @@ export default function DownloadPage() {
       <section className="card">
         <h3 className="font-bold mb-2">Why no Play Store?</h3>
         <p className="text-sm text-white/70 leading-relaxed">
-          Family Matters has adult content in the Chaos tier, and Google Play doesn't allow that. Sideloading the APK keeps the full game intact — no watered-down version.
+          Party Mate has adult content in the Chaos tier, and Google Play doesn't allow that. Sideloading the APK keeps the full game intact — no watered-down version.
         </p>
       </section>
 
       <footer className="text-center text-white/40 text-xs uppercase tracking-widest mt-auto pt-6">
-        <Link href="/" className="hover:text-white">family-matters</Link>
+        <Link href="/" className="hover:text-white">party-mate</Link>
       </footer>
     </main>
   );
@@ -81,11 +81,11 @@ function AndroidInstall() {
 
       <ol className="flex flex-col gap-3 text-sm text-white/80">
         <Step n={1} title="Tap Download APK above">
-          Your browser downloads <code className="text-flame">family-matters.apk</code>.
+          Your browser downloads the APK.
           If a warning asks "Keep anyway?" — tap <b>Keep</b>.
         </Step>
         <Step n={2} title="Open the downloaded file">
-          Pull down your notification shade and tap the download, or open your Files app and tap <code className="text-flame">family-matters.apk</code>.
+          Pull down your notification shade and tap the download, or open your Files app and find the downloaded APK.
         </Step>
         <Step n={3} title="Allow install from this source">
           Android blocks installs from outside the Play Store by default.
