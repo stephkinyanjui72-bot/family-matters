@@ -24,29 +24,83 @@ body {
   overflow-x: hidden;
 }
 
-/* Animated aurora background */
+/* Animated aurora background — sits at the very back behind party-bg */
 body::before {
   content: "";
   position: fixed;
   inset: -20%;
-  z-index: -2;
+  z-index: -3;
   background:
-    radial-gradient(50% 40% at 20% 15%, rgba(255, 61, 110, 0.35), transparent 60%),
-    radial-gradient(45% 35% at 80% 25%, rgba(180, 107, 255, 0.35), transparent 60%),
-    radial-gradient(60% 50% at 50% 90%, rgba(61, 235, 255, 0.18), transparent 60%),
-    radial-gradient(35% 25% at 90% 80%, rgba(255, 138, 61, 0.25), transparent 55%);
-  filter: blur(30px) saturate(1.2);
+    radial-gradient(50% 40% at 20% 15%, rgba(255, 61, 110, 0.45), transparent 60%),
+    radial-gradient(45% 35% at 80% 25%, rgba(180, 107, 255, 0.45), transparent 60%),
+    radial-gradient(60% 50% at 50% 90%, rgba(61, 235, 255, 0.25), transparent 60%),
+    radial-gradient(35% 25% at 90% 80%, rgba(255, 138, 61, 0.32), transparent 55%);
+  filter: blur(30px) saturate(1.3);
   animation: aurora 22s ease-in-out infinite alternate;
 }
 
+/* Vignette sits ABOVE the party-bg layer so it dims everything uniformly */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.0), rgba(0,0,0,0.7) 70%),
-              linear-gradient(180deg, rgba(10,6,18,0.55), rgba(5,2,10,0.9));
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.0), rgba(0,0,0,0.55) 70%),
+              linear-gradient(180deg, rgba(10,6,18,0.30), rgba(5,2,10,0.6));
   pointer-events: none;
+}
+
+/* Party background — sits BETWEEN aurora (-3) and vignette (-1) */
+.party-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+.party-bg .bokeh {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.55;
+}
+.party-bg .bokeh-1 { width: 360px; height: 360px; top:  5%;  left: -10%; background: rgb(var(--flame)); animation: drift1 20s ease-in-out infinite alternate; }
+.party-bg .bokeh-2 { width: 280px; height: 280px; top:  30%; right: -6%; background: rgb(var(--neon));  animation: drift2 24s ease-in-out infinite alternate; }
+.party-bg .bokeh-3 { width: 420px; height: 420px; bottom:-10%; left: 25%; background: rgb(var(--cyber)); animation: drift3 28s ease-in-out infinite alternate; opacity: 0.35; }
+.party-bg .bokeh-4 { width: 220px; height: 220px; top:  62%; left: -8%;  background: rgb(var(--ember)); animation: drift1 22s ease-in-out infinite alternate-reverse; }
+.party-bg .bokeh-5 { width: 320px; height: 320px; top: -10%; right: 25%; background: rgb(var(--neon));  animation: drift2 26s ease-in-out infinite alternate-reverse; opacity: 0.4; }
+.party-bg .bokeh-6 { width: 260px; height: 260px; bottom: 15%; right: 8%; background: rgb(var(--flame)); animation: drift3 21s ease-in-out infinite alternate-reverse; }
+
+.party-bg .sparkles {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 22%, rgba(255,255,255,0.85), transparent 50%),
+    radial-gradient(2px 2px at 88% 18%, rgba(255,200,210,0.7), transparent 50%),
+    radial-gradient(1.2px 1.2px at 32% 75%, rgba(180,200,255,0.8), transparent 50%),
+    radial-gradient(2px 2px at 67% 35%, rgba(255,235,150,0.7), transparent 50%),
+    radial-gradient(1.6px 1.6px at 50% 50%, rgba(255,180,255,0.7), transparent 50%),
+    radial-gradient(1.2px 1.2px at 78% 80%, rgba(180,255,255,0.6), transparent 50%),
+    radial-gradient(1.5px 1.5px at 22% 90%, rgba(255,255,255,0.6), transparent 50%),
+    radial-gradient(1px 1px at 95% 60%, rgba(255,200,255,0.7), transparent 50%);
+  animation: sparkle-pulse 4s ease-in-out infinite;
+}
+
+@keyframes drift1 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(15%, -10%); }
+}
+@keyframes drift2 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(-12%, 18%); }
+}
+@keyframes drift3 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(10%, -16%); }
+}
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
 }
 
 @keyframes aurora {
