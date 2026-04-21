@@ -25,6 +25,9 @@ import { HowsYours } from "./games/HowsYours";
 import { SorryImLate } from "./games/SorryImLate";
 import { TheJar } from "./games/TheJar";
 import { SayTheSameThing } from "./games/SayTheSameThing";
+import { Mafia } from "./games/Mafia";
+import { Psychic } from "./games/Psychic";
+import { TheImposter } from "./games/TheImposter";
 
 export function GameScreen() {
   const { room, isHost, exitGame } = useStore();
@@ -82,6 +85,9 @@ function GameRouter() {
     case "sorry-im-late": return <SorryImLate />;
     case "the-jar": return <TheJar />;
     case "say-the-same-thing": return <SayTheSameThing />;
+    case "mafia": return <Mafia />;
+    case "psychic": return <Psychic />;
+    case "the-imposter": return <TheImposter />;
     default: return null;
   }
 }

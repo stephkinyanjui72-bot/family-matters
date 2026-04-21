@@ -24,7 +24,10 @@ export type GameId =
   | "hows-yours"
   | "sorry-im-late"
   | "the-jar"
-  | "say-the-same-thing";
+  | "say-the-same-thing"
+  | "mafia"
+  | "psychic"
+  | "the-imposter";
 
 export interface Player {
   id: string;          // stable pid, survives reconnect

@@ -48,6 +48,9 @@ export const MIN_PLAYERS: Record<GameId, number> = {
   "sorry-im-late": 4,
   "the-jar": 3,
   "say-the-same-thing": 3,
+  "mafia": 5,
+  "psychic": 4,
+  "the-imposter": 4,
 };
 
 export function initialGameState(gameId: GameId): unknown {
@@ -144,6 +147,30 @@ export function initialGameState(gameId: GameId): unknown {
       submissions: {},       // pid -> latest word for current round
       history: [],           // [{ a: {pid,word}, b: {pid,word} }]
       phase: "submit",       // submit | reveal | won
+    };
+    case "mafia": return {
+      phase: "setup",        // setup | night | day | over
+      dayNumber: 0,
+      roles: {},             // pid -> 'mafia' | 'detective' | 'villager'
+      alive: [],             // pids currently alive
+      mafiaTarget: null,     // pid targeted tonight
+      detectiveCheck: null,  // { target, role } for the current/last night
+      dayVotes: {},          // voter -> target
+      history: [],           // [{ day, killed: pid|null, lynched: pid|null }]
+      winner: null,          // 'mafia' | 'villagers'
+    };
+    case "psychic": return {
+      psychicIndex: 0,       // who's guessing
+      word: null,            // secret word the group is thinking of
+      phase: "idle",         // idle | thinking | reveal
+    };
+    case "the-imposter": return {
+      phase: "setup",        // setup | playing | voting | reveal
+      location: null,        // secret location — null for imposter, set for others
+      imposterPid: null,     // who's the imposter
+      askedIndex: 0,         // which player answers next
+      votes: {},             // voter -> target (voting phase)
+      caught: null,          // 'imposter' | 'innocent' | null — result of vote
     };
   }
 }
@@ -712,6 +739,198 @@ export function reduceGame(
       if (action.type === "reset") {
         return {
           gameState: { phase: "submit", submissions: {}, order: null, readIndex: 0, votes: {}, revealed: false },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "mafia": {
+      // Roles/alive/winner derived from state; clients hide roles not their own.
+      const alive = (s.alive as string[]) || [];
+      const roles = (s.roles as Record<string, string>) || {};
+      const myRole = roles[actorPid];
+      const phase = s.phase as string;
+
+      if (action.type === "startGame") {
+        // Shuffle roles. Count scales with player count.
+        const pids = room.players.map((pl) => pl.id);
+        const shuffled = [...pids];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const mafiaCount = Math.max(1, Math.floor(pids.length / 4));
+        const newRoles: Record<string, string> = {};
+        shuffled.forEach((pid, i) => {
+          if (i < mafiaCount) newRoles[pid] = "mafia";
+          else if (i === mafiaCount) newRoles[pid] = "detective";
+          else newRoles[pid] = "villager";
+        });
+        return {
+          gameState: {
+            phase: "night",
+            dayNumber: 1,
+            roles: newRoles,
+            alive: pids,
+            mafiaTarget: null,
+            detectiveCheck: null,
+            dayVotes: {},
+            history: [],
+            winner: null,
+          },
+          bags,
+        };
+      }
+
+      if (action.type === "mafiaVote") {
+        if (phase !== "night" || myRole !== "mafia" || !alive.includes(actorPid)) return null;
+        const target = p.playerId as string;
+        if (!alive.includes(target) || roles[target] === "mafia") return null;
+        return { gameState: { ...s, mafiaTarget: target }, bags };
+      }
+
+      if (action.type === "detectiveCheck") {
+        if (phase !== "night" || myRole !== "detective" || !alive.includes(actorPid)) return null;
+        const target = p.playerId as string;
+        if (!alive.includes(target) || target === actorPid) return null;
+        return { gameState: { ...s, detectiveCheck: { target, role: roles[target] || "villager" } }, bags };
+      }
+
+      if (action.type === "resolveNight") {
+        if (phase !== "night") return null;
+        const killed = (s.mafiaTarget as string) || null;
+        const nextAlive = killed ? alive.filter((pid) => pid !== killed) : alive;
+        const history = Array.isArray(s.history) ? [...(s.history as Array<{ day: number; killed: string | null; lynched: string | null }>)] : [];
+        history.push({ day: (s.dayNumber as number) || 1, killed, lynched: null });
+        // Win checks
+        const aliveMafia = nextAlive.filter((pid) => roles[pid] === "mafia").length;
+        const aliveInnocent = nextAlive.length - aliveMafia;
+        let winner: string | null = null;
+        if (aliveMafia === 0) winner = "villagers";
+        else if (aliveMafia >= aliveInnocent) winner = "mafia";
+        return {
+          gameState: {
+            ...s,
+            alive: nextAlive,
+            history,
+            mafiaTarget: null,
+            phase: winner ? "over" : "day",
+            winner,
+          },
+          bags,
+        };
+      }
+
+      if (action.type === "dayVote") {
+        if (phase !== "day" || !alive.includes(actorPid)) return null;
+        const target = p.playerId as string;
+        if (!alive.includes(target)) return null;
+        return { gameState: { ...s, dayVotes: { ...(s.dayVotes as object || {}), [actorPid]: target } }, bags };
+      }
+
+      if (action.type === "resolveDay") {
+        if (phase !== "day") return null;
+        const votes = (s.dayVotes as Record<string, string>) || {};
+        const tally: Record<string, number> = {};
+        for (const target of Object.values(votes)) tally[target] = (tally[target] || 0) + 1;
+        let lynched: string | null = null;
+        let top = 0;
+        let tie = false;
+        for (const [pid2, count] of Object.entries(tally)) {
+          if (count > top) { top = count; lynched = pid2; tie = false; }
+          else if (count === top) { tie = true; }
+        }
+        if (tie) lynched = null;
+        const nextAlive = lynched ? alive.filter((pid) => pid !== lynched) : alive;
+        const history = Array.isArray(s.history) ? [...(s.history as Array<{ day: number; killed: string | null; lynched: string | null }>)] : [];
+        const lastHist = history[history.length - 1];
+        if (lastHist && lastHist.day === (s.dayNumber as number)) lastHist.lynched = lynched;
+        // Win checks
+        const aliveMafia = nextAlive.filter((pid) => roles[pid] === "mafia").length;
+        const aliveInnocent = nextAlive.length - aliveMafia;
+        let winner: string | null = null;
+        if (aliveMafia === 0) winner = "villagers";
+        else if (aliveMafia >= aliveInnocent) winner = "mafia";
+        return {
+          gameState: {
+            ...s,
+            alive: nextAlive,
+            dayVotes: {},
+            history,
+            phase: winner ? "over" : "night",
+            dayNumber: ((s.dayNumber as number) || 1) + (winner ? 0 : 1),
+            winner,
+            detectiveCheck: null,
+          },
+          bags,
+        };
+      }
+
+      if (action.type === "reset") {
+        return {
+          gameState: {
+            phase: "setup", dayNumber: 0, roles: {}, alive: [],
+            mafiaTarget: null, detectiveCheck: null, dayVotes: {}, history: [], winner: null,
+          },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "psychic": {
+      const psychic = room.players[((s.psychicIndex as number) || 0) % n];
+      if (action.type === "submit") {
+        if (actorPid === psychic.id) return null;
+        const word = String(p.word || "").slice(0, 40).trim();
+        if (!word) return null;
+        return { gameState: { ...s, word, phase: "thinking" }, bags };
+      }
+      if (action.type === "reveal") return { gameState: { ...s, phase: "reveal" }, bags };
+      if (action.type === "next") {
+        return { gameState: { ...s, psychicIndex: (((s.psychicIndex as number) || 0) + 1) % n, word: null, phase: "idle" }, bags };
+      }
+      return null;
+    }
+    case "the-imposter": {
+      if (action.type === "startGame") {
+        const location = String(p.location || "").trim();
+        if (!location) return null;
+        const pids = room.players.map((pl) => pl.id);
+        const imposter = pids[Math.floor(Math.random() * pids.length)];
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return {
+          gameState: { ...s, phase: "playing", location, imposterPid: imposter, askedIndex: 0, votes: {}, caught: null },
+          bags: nextBags,
+        };
+      }
+      if (action.type === "nextAsker") {
+        return { gameState: { ...s, askedIndex: (((s.askedIndex as number) || 0) + 1) % n }, bags };
+      }
+      if (action.type === "startVote") {
+        return { gameState: { ...s, phase: "voting", votes: {} }, bags };
+      }
+      if (action.type === "vote") {
+        if (s.phase !== "voting") return null;
+        const target = p.playerId as string;
+        if (!target || !room.players.some((pl) => pl.id === target)) return null;
+        return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: target } }, bags };
+      }
+      if (action.type === "resolve") {
+        if (s.phase !== "voting") return null;
+        const votes = (s.votes as Record<string, string>) || {};
+        const tally: Record<string, number> = {};
+        for (const t of Object.values(votes)) tally[t] = (tally[t] || 0) + 1;
+        let leader: string | null = null;
+        let top = 0;
+        for (const [k, v] of Object.entries(tally)) {
+          if (v > top) { top = v; leader = k; }
+        }
+        const caught = leader === (s.imposterPid as string) ? "imposter" : "innocent";
+        return { gameState: { ...s, phase: "reveal", caught }, bags };
+      }
+      if (action.type === "reset") {
+        return {
+          gameState: { phase: "setup", location: null, imposterPid: null, askedIndex: 0, votes: {}, caught: null },
           bags,
         };
       }

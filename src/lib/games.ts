@@ -33,6 +33,9 @@ export const GAMES: GameMeta[] = [
   { id: "sorry-im-late", name: "Sorry I'm Late", blurb: "Improvise your way out of it.", emoji: "🚪", minPlayers: 4 },
   { id: "the-jar", name: "The Jar", blurb: "Anonymous confessions. Guess whose.", emoji: "🏺", minPlayers: 3 },
   { id: "say-the-same-thing", name: "Say The Same Thing", blurb: "Two minds, one word. Converge.", emoji: "🧠", minPlayers: 3 },
+  { id: "mafia", name: "Mafia", blurb: "Secret roles. Night kills. Day lynch.", emoji: "🕴️", minPlayers: 5 },
+  { id: "psychic", name: "Psychic", blurb: "Read the room's mind.", emoji: "🔮", minPlayers: 4 },
+  { id: "the-imposter", name: "The Imposter", blurb: "One player is lost. Sniff them out.", emoji: "🕵️", minPlayers: 4 },
 ];
 
 export const GAMES_BY_ID: Record<GameId, GameMeta> = Object.fromEntries(
