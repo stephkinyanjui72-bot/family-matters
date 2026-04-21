@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid session" }, { status: 401 });
   }
 
-  // Age check: user must be 18+ at all. Chaos tier requires 23+.
+  // Age check: user must be 18+ to host anything. 18+ accounts get all tiers.
   const { data: profile } = await sb
     .from("profiles")
     .select("birthdate, display_name")
@@ -37,9 +37,6 @@ export async function POST(req: Request) {
   const age = computeAge(dob);
   if (age === null || age < 18) {
     return NextResponse.json({ ok: false, error: "18+ account required" }, { status: 403 });
-  }
-  if (intensity === "chaos" && age < 23) {
-    return NextResponse.json({ ok: false, error: "Chaos tier requires 23+" }, { status: 403 });
   }
   // ----------------------------------------------------------------------
 

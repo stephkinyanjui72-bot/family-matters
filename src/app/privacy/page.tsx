@@ -26,10 +26,10 @@ export default function PrivacyPage() {
 
         <div>
           <h2 className="title font-bold text-white mb-1">2. How we use it</h2>
-          <p>Your email and password let you sign in. Your birthdate determines which
-          intensity tiers are available to you (18+ required, 23+ for Chaos).
-          Your display name shows in rooms you join. That's it — we don't profile
-          you or sell anything to advertisers.</p>
+          <p>Your email and password let you sign in. Your birthdate confirms you're
+          18+ (required to host). All intensity tiers are available to every 18+
+          account. Your display name shows in rooms you join. That's it — we don't
+          profile you or sell anything to advertisers.</p>
         </div>
 
         <div>

@@ -48,7 +48,7 @@ const TIERS: {
   },
   {
     id: "chaos",
-    label: "Chaos 23+",
+    label: "Chaos",
     emoji: "💀",
     tone: "from-purple-900 via-rose-800 to-red-900",
     hintBg: "bg-rose-900/20",
@@ -198,17 +198,7 @@ export default function RoomPage() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => {
-                    if (t.id === "chaos") {
-                      const ok = typeof window !== "undefined" && localStorage.getItem("ageOK:23") === "1";
-                      if (!ok) {
-                        const confirm = window.confirm("Chaos mode is 23+ only. Everyone playing 23 or older and consenting?");
-                        if (!confirm) return;
-                        try { localStorage.setItem("ageOK:23", "1"); } catch {}
-                      }
-                    }
-                    setIntensity(t.id);
-                  }}
+                  onClick={() => setIntensity(t.id)}
                   className={`rounded-xl py-2.5 px-3 text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
                     active
                       ? `bg-gradient-to-br ${t.tone} border-white/40 text-white shadow-lg shadow-black/40`

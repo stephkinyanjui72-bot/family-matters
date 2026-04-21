@@ -26,9 +26,10 @@ export default function TermsPage() {
         <div>
           <h2 className="title font-bold text-white mb-1">2. Who can use it</h2>
           <p>You must be at least <b>18 years old</b> to create an account and host a game.
-          The Chaos tier is restricted to accounts aged <b>23+</b>.
-          You are responsible for confirming that everyone in the room you host is old
-          enough for the content you pick. Don't invite minors to adult-tier games.</p>
+          All intensity tiers (including Chaos) are available to every 18+ account.
+          You are responsible for confirming that everyone in the room you host is
+          an adult and is comfortable with the content you pick.
+          Don't invite minors to the game.</p>
         </div>
 
         <div>

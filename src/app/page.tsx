@@ -5,11 +5,11 @@ import { clearStoredSession, peekSession, useStore } from "@/lib/store";
 import { isNativeApp } from "@/lib/platform";
 import type { Intensity } from "@/lib/types";
 
-const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string; gate?: number }[] = [
+const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string }[] = [
   { id: "mild", label: "Mild", hint: "Warm-up vibes. Safe for any crowd.", tone: "from-emerald-400/70 to-teal-400/70" },
-  { id: "spicy", label: "Spicy", hint: "Flirty, bold, suggestive. 18+ recommended.", tone: "from-flame to-ember" },
+  { id: "spicy", label: "Spicy", hint: "Flirty, bold, suggestive.", tone: "from-flame to-ember" },
   { id: "extreme", label: "Extreme", hint: "No limits. Adults only.", tone: "from-fuchsia-500 to-rose-500" },
-  { id: "chaos", label: "Chaos 23+", hint: "Unfiltered. Chaotic. Intimate. 23+ only.", tone: "from-rose-600 via-fuchsia-700 to-purple-700", gate: 23 },
+  { id: "chaos", label: "Chaos", hint: "Unfiltered. Chaotic. Intimate.", tone: "from-rose-600 via-fuchsia-700 to-purple-700" },
 ];
 
 export default function HomePage() {
@@ -32,7 +32,6 @@ function Home() {
   const [intensity, setIntensity] = useState<Intensity>("spicy");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [pendingGate, setPendingGate] = useState<Intensity | null>(null);
   const [stuckCode, setStuckCode] = useState<string | null>(null);
   const [inApp, setInApp] = useState(false);
 
@@ -83,12 +82,13 @@ function Home() {
     if (authUser?.displayName && !name) setName(authUser.displayName);
   }, [authUser, name]);
 
-  // Intensity tiers available depend on age tier. Server enforces too.
+  // Intensity tiers available depend on age tier. Signup enforces 18+, so
+  // every authenticated user gets all four tiers. Under-18 falls back to
+  // mild only (defensive — they shouldn't reach host in the first place).
   const availableTiers: Intensity[] = (() => {
-    if (!authUser) return ["mild", "spicy", "extreme", "chaos"]; // visible but the host flow redirects to login first
-    if (authUser.ageTier === "23+") return ["mild", "spicy", "extreme", "chaos"];
-    if (authUser.ageTier === "18-22") return ["mild", "spicy", "extreme"];
-    return ["mild"]; // under-18 shouldn't reach signup, but be defensive
+    if (!authUser) return ["mild", "spicy", "extreme", "chaos"]; // preview for unauth — host button redirects to login
+    if (authUser.ageTier === "under-18") return ["mild"];
+    return ["mild", "spicy", "extreme", "chaos"];
   })();
 
   const onJoin = async () => {
@@ -114,7 +114,7 @@ function Home() {
             <div className="absolute right-0 mt-2 card !p-3 w-56 flex flex-col gap-2 text-sm">
               <div className="text-white/50 text-xs truncate">{authUser.email}</div>
               <div className="text-[10px] uppercase tracking-widest text-flame">
-                {authUser.ageTier === "23+" ? "All tiers" : authUser.ageTier === "18-22" ? "Chaos locked (23+)" : "Limited"}
+                {authUser.ageTier === "under-18" ? "Mild only" : "All tiers"}
               </div>
               {!authUser.emailVerified && (
                 <a href={`/auth/verify-email?email=${encodeURIComponent(authUser.email || "")}`} className="text-[11px] text-amber-300 hover:underline">
@@ -141,7 +141,7 @@ function Home() {
           PARTY<br/>MATE
         </h1>
         <p className="text-white/60 mt-3 uppercase tracking-[0.35em] text-[10px] font-bold">
-          31 games · one wild night · 23+ option
+          31 games · one wild night · 18+
         </p>
       </div>
 
@@ -204,13 +204,7 @@ function Home() {
               {INTENSITIES.filter((t) => availableTiers.includes(t.id)).map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => {
-                    if (t.gate) {
-                      const confirmed = localStorage.getItem(`ageOK:${t.gate}`) === "1";
-                      if (!confirmed) return setPendingGate(t.id);
-                    }
-                    setIntensity(t.id);
-                  }}
+                  onClick={() => setIntensity(t.id)}
                   className={`rounded-xl py-3 text-sm font-semibold border transition ${
                     intensity === t.id
                       ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
@@ -226,11 +220,6 @@ function Home() {
                 ? INTENSITIES.find((t) => t.id === intensity)?.hint
                 : "—"}
             </p>
-            {authUser?.ageTier === "18-22" && (
-              <p className="text-[11px] text-white/40">
-                Chaos tier available for 23+ accounts only.
-              </p>
-            )}
           </div>
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
@@ -238,31 +227,6 @@ function Home() {
             <button className="btn-primary flex-1" onClick={onHost} disabled={busy}>
               {busy ? "…" : "Start"}
             </button>
-          </div>
-        </div>
-      )}
-
-      {pendingGate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
-          <div className="card max-w-sm w-full flex flex-col gap-4 border-rose-500/40">
-            <h3 className="text-xl font-bold">Age Gate — 23+</h3>
-            <p className="text-white/70 text-sm">
-              <b>Chaos mode</b> is more intimate and explicit than Extreme. Prompts assume all players are consenting adults aged 23 or older. Nothing stays on your screen if anyone here isn't comfortable — swap tiers any time.
-            </p>
-            <p className="text-white/70 text-sm">By continuing you confirm everyone playing is 23+ and consents to adult content.</p>
-            <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setPendingGate(null)}>Cancel</button>
-              <button
-                className="btn-primary flex-1"
-                onClick={() => {
-                  try { localStorage.setItem(`ageOK:23`, "1"); } catch {}
-                  setIntensity(pendingGate);
-                  setPendingGate(null);
-                }}
-              >
-                I'm 23+, enter Chaos
-              </button>
-            </div>
           </div>
         </div>
       )}

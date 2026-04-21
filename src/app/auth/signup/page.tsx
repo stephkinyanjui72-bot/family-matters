@@ -6,7 +6,7 @@ import { getSupabase } from "@/lib/supabaseClient";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
 
-// Minimum age to create an account. Chaos tier still requires 23+.
+// Minimum age to create an account. Any 18+ account unlocks all tiers.
 const MIN_AGE = 18;
 
 function yearsSince(dob: string): number {
@@ -108,7 +108,7 @@ export default function SignupPage() {
               onChange={(e) => setBirthdate(e.target.value)}
               max={new Date().toISOString().slice(0, 10)}
             />
-            <span className="text-[11px] text-white/45">18+ to sign up · 23+ unlocks Chaos tier</span>
+            <span className="text-[11px] text-white/45">18+ required · unlocks all tiers</span>
           </label>
 
           <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer mt-1">
