@@ -17,13 +17,29 @@ export function ReconnectOverlay() {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
-      <div className="card-glow max-w-sm text-center pop-in">
-        <div className="text-4xl float-slow mb-2">📡</div>
-        <div className="title text-xl font-black">Reconnecting…</div>
-        <p className="text-white/60 text-sm mt-2">
-          Your seat is held. Just getting back on the line.
-        </p>
+      <div className="card-glow max-w-sm text-center pop-in flex flex-col items-center gap-4">
+        <Spinner />
+        <p className="text-white/60 text-sm">Your seat is held. Reconnecting…</p>
       </div>
+    </div>
+  );
+}
+
+// Double-ring loading spinner using the app's flame/neon palette.
+function Spinner() {
+  return (
+    <div className="relative w-16 h-16">
+      <div
+        className="absolute inset-0 rounded-full border-4 border-white/10"
+      />
+      <div
+        className="absolute inset-0 rounded-full border-4 border-transparent animate-spin"
+        style={{
+          borderTopColor: "rgb(var(--flame))",
+          borderRightColor: "rgb(var(--ember))",
+          animationDuration: "0.9s",
+        }}
+      />
     </div>
   );
 }

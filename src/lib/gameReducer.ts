@@ -120,39 +120,41 @@ export function reduceGame(
 
   switch (gameId) {
     case "truth-or-dare": {
+      // `pick` keeps the "current-player-or-host" rule — you shouldn't draw
+      // someone else's truth/dare for them. Everything else is open.
       if (action.type === "pick") {
         if (actorPid !== currentByTurn().id && !isHost) return null;
         if (!["truth", "dare"].includes(p.kind as string)) return null;
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, pick: p.kind, prompt: String(p.prompt || "") }, bags: nextBags };
       }
-      if (action.type === "next" && isHost) {
+      if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, pick: null, prompt: null }, bags };
       }
       return null;
     }
     case "do-or-drink": {
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, challenge: String(p.challenge || "") }, bags: nextBags };
       }
-      if (action.type === "next" && isHost) {
+      if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, challenge: null }, bags };
       }
       return null;
     }
     case "never-have-i-ever": {
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, prompt: String(p.prompt || "") }, bags: nextBags };
       }
-      if (action.type === "next" && isHost) {
+      if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, prompt: null }, bags };
       }
       return null;
     }
     case "most-likely-to": {
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, prompt: String(p.prompt || ""), votes: {}, revealed: false }, bags: nextBags };
       }
@@ -161,12 +163,12 @@ export function reduceGame(
         if (!target || !room.players.some((pl) => pl.id === target)) return null;
         return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: target } }, bags };
       }
-      if (action.type === "tally" && isHost) return { gameState: { ...s, revealed: true }, bags };
-      if (action.type === "next" && isHost) return { gameState: { ...s, prompt: null, votes: {}, revealed: false }, bags };
+      if (action.type === "tally") return { gameState: { ...s, revealed: true }, bags };
+      if (action.type === "next") return { gameState: { ...s, prompt: null, votes: {}, revealed: false }, bags };
       return null;
     }
     case "would-you-rather": {
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, prompt: p.prompt ?? null, votes: {}, revealed: false }, bags: nextBags };
       }
@@ -174,11 +176,12 @@ export function reduceGame(
         if (!["a", "b"].includes(p.choice as string)) return null;
         return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: p.choice } }, bags };
       }
-      if (action.type === "tally" && isHost) return { gameState: { ...s, revealed: true }, bags };
-      if (action.type === "next" && isHost) return { gameState: { ...s, prompt: null, votes: {}, revealed: false }, bags };
+      if (action.type === "tally") return { gameState: { ...s, revealed: true }, bags };
+      if (action.type === "next") return { gameState: { ...s, prompt: null, votes: {}, revealed: false }, bags };
       return null;
     }
     case "paranoia": {
+      // `ask` stays locked to the asker — nobody else should whisper for them.
       const asker = room.players[((s.askerIndex as number) || 0) % n];
       if (action.type === "ask") {
         if (actorPid !== asker.id) return null;
@@ -187,23 +190,24 @@ export function reduceGame(
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, prompt: String(p.prompt || ""), targetId: tid, revealed: false }, bags: nextBags };
       }
-      if (action.type === "flipCoin" && isHost) return { gameState: { ...s, revealed: !!p.revealed }, bags };
-      if (action.type === "next" && isHost) {
+      if (action.type === "flipCoin") return { gameState: { ...s, revealed: !!p.revealed }, bags };
+      if (action.type === "next") {
         return { gameState: { ...s, askerIndex: (((s.askerIndex as number) || 0) + 1) % n, prompt: null, targetId: null, revealed: false }, bags };
       }
       return null;
     }
     case "spin-the-bottle": {
-      if (action.type === "spin" && isHost) {
+      if (action.type === "spin") {
         const picker = Math.floor(Math.random() * n);
         let target = Math.floor(Math.random() * n);
         if (n > 1) while (target === picker) target = Math.floor(Math.random() * n);
         return { gameState: { spinning: true, pickerIndex: picker, targetIndex: target, seed: Date.now() }, bags };
       }
-      if (action.type === "settle" && isHost) return { gameState: { ...s, spinning: false }, bags };
+      if (action.type === "settle") return { gameState: { ...s, spinning: false }, bags };
       return null;
     }
     case "two-truths-and-a-lie": {
+      // `submit` stays locked to the teller — only they know which is the lie.
       const teller = room.players[((s.turnIndex as number) || 0) % n];
       if (action.type === "submit") {
         if (actorPid !== teller.id) return null;
@@ -219,28 +223,29 @@ export function reduceGame(
         if (![0, 1, 2].includes(idx)) return null;
         return { gameState: { ...s, votes: { ...(s.votes as object || {}), [actorPid]: idx } }, bags };
       }
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const statements = s.statements as Array<{ isLie: boolean }> | null;
         const idx = statements?.findIndex((x) => x.isLie) ?? -1;
         if (idx < 0) return null;
         return { gameState: { ...s, revealedLie: idx }, bags };
       }
-      if (action.type === "next" && isHost) {
+      if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, statements: null, votes: {}, revealedLie: null }, bags };
       }
       return null;
     }
     case "hot-seat": {
-      if (action.type === "reveal" && isHost) {
+      if (action.type === "reveal") {
         const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
         return { gameState: { ...s, prompt: String(p.prompt || "") }, bags: nextBags };
       }
-      if (action.type === "nextVictim" && isHost) {
+      if (action.type === "nextVictim") {
         return { gameState: { ...s, victimIndex: (((s.victimIndex as number) || 0) + 1) % n, prompt: null }, bags };
       }
       return null;
     }
     case "kiss-marry-avoid": {
+      // `reveal` stays locked to the current player — the round is theirs.
       const current = room.players[((s.turnIndex as number) || 0) % n];
       if (action.type === "reveal") {
         if (actorPid !== current.id) return null;
@@ -258,7 +263,7 @@ export function reduceGame(
         for (const v of vals) if (!["kiss", "marry", "avoid"].includes(v)) return null;
         return { gameState: { ...s, choices: { ...(s.choices as object || {}), [actorPid]: m } }, bags };
       }
-      if (action.type === "next" && isHost) {
+      if (action.type === "next") {
         return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n, options: null, choices: {} }, bags };
       }
       return null;

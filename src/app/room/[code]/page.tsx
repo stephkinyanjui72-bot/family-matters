@@ -67,9 +67,19 @@ export default function RoomPage() {
         <div>
           <div className="flex items-center gap-2">
             <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">Room code</div>
-            <span className={`inline-flex items-center gap-1 chip text-[9px] ${connected ? "border-emerald-400/40 text-emerald-300" : "border-rose-500/40 text-rose-400"}`}>
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400" : "bg-rose-500 animate-pulse"}`} />
-              {connected ? "live" : "reconnecting"}
+            <span className={`inline-flex items-center gap-1.5 chip text-[9px] ${connected ? "border-emerald-400/40 text-emerald-300" : "border-white/20 text-white/60"}`}>
+              {connected ? (
+                <>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  live
+                </>
+              ) : (
+                <span
+                  className="inline-block w-3 h-3 rounded-full border-[1.5px] border-white/15 border-t-flame border-r-ember animate-spin"
+                  style={{ animationDuration: "0.9s" }}
+                  aria-label="Reconnecting"
+                />
+              )}
             </span>
           </div>
           <div className="title text-4xl font-black tracking-[0.4em] holo-text">{room.code}</div>
