@@ -143,6 +143,7 @@ function Home() {
                   ⚠ Verify your email
                 </a>
               )}
+              <a href="/profile" className="btn-ghost !py-1.5 !text-xs text-center">👤 Profile</a>
               <button className="btn-ghost !py-1.5 !text-xs" onClick={() => signOut()}>Sign out</button>
             </div>
           </details>
