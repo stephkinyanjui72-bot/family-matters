@@ -220,11 +220,11 @@ export default function RoomPage() {
             const cat = CATEGORIES.find((c) => c.id === g.category)!;
             // category-specific tint for the corner glow
             const glowMap: Record<Category, string> = {
-              intimate: "rgba(244, 63, 94, 0.38)",   // rose
-              spill:    "rgba(255, 61, 110, 0.35)",
-              sleuth:   "rgba(180, 107, 255, 0.35)",
-              quick:    "rgba(255, 138, 61, 0.35)",
-              play:     "rgba(61, 235, 255, 0.30)",
+              spill:  "rgba(255, 61, 110, 0.35)",
+              sleuth: "rgba(180, 107, 255, 0.35)",
+              quick:  "rgba(255, 138, 61, 0.35)",
+              play:   "rgba(61, 235, 255, 0.30)",
+              mingle: "rgba(244, 63, 94, 0.38)",   // rose
             };
             return (
               <button
@@ -243,11 +243,11 @@ export default function RoomPage() {
                     className="text-[9px] uppercase tracking-widest font-bold"
                     style={{
                       color:
-                        cat.id === "intimate" ? "#fb7185" :          // rose-400
-                        cat.id === "spill"    ? "rgb(var(--flame))" :
-                        cat.id === "sleuth"   ? "rgb(var(--neon))" :
-                        cat.id === "quick"    ? "rgb(var(--ember))" :
-                                                "rgb(var(--cyber))",
+                        cat.id === "spill"  ? "rgb(var(--flame))" :
+                        cat.id === "sleuth" ? "rgb(var(--neon))" :
+                        cat.id === "quick"  ? "rgb(var(--ember))" :
+                        cat.id === "play"   ? "rgb(var(--cyber))" :
+                                              "#fb7185",            // mingle: rose-400
                     }}
                   >
                     {cat.emoji} {cat.label}
