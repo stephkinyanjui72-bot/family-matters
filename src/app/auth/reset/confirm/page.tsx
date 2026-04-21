@@ -1,18 +1,51 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
 import { PasswordField } from "@/components/PasswordField";
 
-// Landing page for the password-reset email link. Supabase places the user
-// into a recovery session via the URL fragment; we just call updateUser.
+// Landing page for the password-reset email link. The URL arrives with a
+// #access_token=…&refresh_token=…&type=recovery fragment. We establish the
+// recovery session explicitly on mount so updateUser has a live session
+// when the user submits.
 export default function ResetConfirmPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const sb = getSupabase();
+      const hash = typeof window !== "undefined" ? window.location.hash.slice(1) : "";
+      if (hash) {
+        const params = new URLSearchParams(hash);
+        const access_token = params.get("access_token") || "";
+        const refresh_token = params.get("refresh_token") || "";
+        if (access_token && refresh_token) {
+          const { error } = await sb.auth.setSession({ access_token, refresh_token });
+          if (error) {
+            setErr(`Couldn't start recovery session: ${error.message}`);
+          }
+          // Strip the hash so the tokens aren't shared / re-used.
+          try {
+            const clean = window.location.pathname + window.location.search;
+            window.history.replaceState(null, "", clean);
+          } catch {}
+        }
+      }
+      // If there's still no session, surface a clear "expired link" message
+      // up front instead of waiting for the user to hit Submit.
+      const { data } = await sb.auth.getSession();
+      if (!data.session) {
+        setErr("This reset link has expired or already been used. Request a new one.");
+      }
+      setReady(true);
+    })();
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +57,6 @@ export default function ResetConfirmPage() {
     const { error } = await sb.auth.updateUser({ password });
     setBusy(false);
     if (error) return setErr(error.message);
-    // Fire a global toast so the user gets a visible confirmation before
-    // we bounce them home.
     try {
       window.dispatchEvent(new CustomEvent("native-auth-ok", { detail: "Password updated" }));
     } catch {}
@@ -49,9 +80,11 @@ export default function ResetConfirmPage() {
             <PasswordField value={confirm} onChange={setConfirm} autoComplete="new-password" />
           </label>
           {err && <p className="text-rose-400 text-sm">{err}</p>}
-          <button className="btn-primary" disabled={busy}>{busy ? "Updating…" : "Update password"}</button>
+          <button className="btn-primary" disabled={busy || !ready}>
+            {!ready ? "Loading…" : busy ? "Updating…" : "Update password"}
+          </button>
         </form>
-        <Link href="/" className="text-center text-xs text-white/40 hover:text-white">← Back</Link>
+        <Link href="/auth/reset" className="text-center text-xs text-white/40 hover:text-white">← Request a new link</Link>
       </div>
     </main>
   );
