@@ -256,7 +256,7 @@ function Home() {
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>
             <button className="btn-primary flex-1" onClick={onHost} disabled={busy}>
-              {busy ? "…" : "Start"}
+              {busy ? "Creating…" : "Start"}
             </button>
           </div>
         </div>
@@ -310,34 +310,47 @@ function Home() {
       {showLiabilityModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
           <div className="card-glow max-w-sm w-full flex flex-col gap-4 pop-in border-rose-500/40">
-            <div className="text-center">
-              <div className="text-4xl mb-2">⚠️</div>
-              <h3 className="title text-2xl font-black">Host responsibility</h3>
-            </div>
-            <p className="text-sm text-white/80 leading-relaxed">
-              You're about to host a <b className="text-flame capitalize">{intensity}</b> tier session.
-              By starting this party you confirm that:
-            </p>
-            <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
-              <li>Every player in the room is <b>18 or older</b>.</li>
-              <li>All players have consented to adult content in this session.</li>
-              <li>You take responsibility for who you invite and what happens during play.</li>
-            </ul>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                className="btn-ghost"
-                onClick={() => setShowLiabilityModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-primary"
-                onClick={onHost}
-                disabled={busy}
-              >
-                {busy ? "…" : "Agree & Start"}
-              </button>
-            </div>
+            {busy ? (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <div className="relative w-14 h-14">
+                  <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+                  <div
+                    className="absolute inset-0 rounded-full border-4 border-transparent animate-spin"
+                    style={{
+                      borderTopColor: "rgb(var(--flame))",
+                      borderRightColor: "rgb(var(--ember))",
+                      animationDuration: "0.8s",
+                    }}
+                  />
+                </div>
+                <p className="text-white/85 text-sm font-bold">Creating your party…</p>
+                <p className="text-white/50 text-xs capitalize">{intensity} tier · shuffling the bag</p>
+              </div>
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className="text-4xl mb-2">⚠️</div>
+                  <h3 className="title text-2xl font-black">Host responsibility</h3>
+                </div>
+                <p className="text-sm text-white/80 leading-relaxed">
+                  You're about to host a <b className="text-flame capitalize">{intensity}</b> tier session.
+                  By starting this party you confirm that:
+                </p>
+                <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
+                  <li>Every player in the room is <b>18 or older</b>.</li>
+                  <li>All players have consented to adult content in this session.</li>
+                  <li>You take responsibility for who you invite and what happens during play.</li>
+                </ul>
+                <div className="grid grid-cols-2 gap-2">
+                  <button className="btn-ghost" onClick={() => setShowLiabilityModal(false)}>
+                    Cancel
+                  </button>
+                  <button className="btn-primary" onClick={onHost}>
+                    Agree &amp; Start
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

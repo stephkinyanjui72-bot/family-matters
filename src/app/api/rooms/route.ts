@@ -51,26 +51,30 @@ export async function POST(req: Request) {
   }
   // ----------------------------------------------------------------------
 
-  // Retry a handful of times if we collide with an existing code.
+  // Insert-then-retry on PK conflict — saves a SELECT per attempt vs the
+  // previous select-then-insert loop. 4-char codes from a 32-char alphabet
+  // give ~1M combos, so collisions are rare and the first attempt almost
+  // always succeeds.
   let code = "";
   for (let attempt = 0; attempt < 8; attempt++) {
     const candidate = makeRoomCode();
-    const { data: existing } = await sb.from("rooms").select("code").eq("code", candidate).maybeSingle();
-    if (!existing) { code = candidate; break; }
+    const { error: insertRoomErr } = await sb.from("rooms").insert({
+      code: candidate,
+      host_user_id: authUser.id,
+      intensity,
+      current_game: null,
+      game_state: null,
+      bags: {},
+    });
+    if (!insertRoomErr) { code = candidate; break; }
+    // 23505 = Postgres unique_violation. Any other error is fatal.
+    if (insertRoomErr.code !== "23505") {
+      return NextResponse.json({ ok: false, error: insertRoomErr.message }, { status: 500 });
+    }
   }
   if (!code) return NextResponse.json({ ok: false, error: "Could not allocate room code" }, { status: 500 });
 
   const pid = newPid();
-  const { error: insertRoomErr } = await sb.from("rooms").insert({
-    code,
-    host_user_id: authUser.id,
-    intensity,
-    current_game: null,
-    game_state: null,
-    bags: {},
-  });
-  if (insertRoomErr) return NextResponse.json({ ok: false, error: insertRoomErr.message }, { status: 500 });
-
   const hostName = (profile as { display_name?: string | null } | null)?.display_name || name;
   const { error: insertPlayerErr } = await sb.from("room_players").insert({
     room_code: code,
