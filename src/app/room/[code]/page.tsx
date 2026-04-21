@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { useStore } from "@/lib/store";
-import { GAMES } from "@/lib/games";
+import { GAMES, CATEGORIES, type Category } from "@/lib/games";
 import type { Intensity } from "@/lib/types";
 import { GameScreen } from "@/components/GameScreen";
 import { ExitSessionButton } from "@/components/ExitSessionButton";
@@ -22,6 +22,7 @@ export default function RoomPage() {
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>("");
+  const [filter, setFilter] = useState<Category | "all">("all");
 
   useEffect(() => {
     if (!room && typeof window !== "undefined") {
@@ -174,25 +175,86 @@ export default function RoomPage() {
       </section>
 
       <section>
-        <h3 className="title text-xl font-black mb-3 uppercase tracking-wider">Pick a Game</h3>
+        <div className="flex items-baseline justify-between mb-3">
+          <h3 className="title text-xl font-black uppercase tracking-wider">Pick a Game</h3>
+          <span className="text-[10px] uppercase tracking-widest text-white/40">{GAMES.length} games</span>
+        </div>
+
+        {/* Category filter row — horizontal scroll on narrow screens */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-4">
+          <button
+            onClick={() => setFilter("all")}
+            className={`cat-chip border-white/15 shrink-0 text-xs ${
+              filter === "all"
+                ? "cat-chip-active bg-gradient-to-br from-flame/80 to-ember/80"
+                : "bg-white/5 text-white/75"
+            }`}
+          >
+            All
+          </button>
+          {CATEGORIES.map((cat) => {
+            const active = filter === cat.id;
+            const count = GAMES.filter((g) => g.category === cat.id).length;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setFilter(cat.id)}
+                className={`cat-chip shrink-0 text-xs border-white/15 ${
+                  active
+                    ? `cat-chip-active bg-gradient-to-br ${cat.tone[0]} ${cat.tone[1]}`
+                    : "bg-white/5 text-white/75"
+                }`}
+              >
+                <span>{cat.emoji}</span>
+                <span>{cat.label}</span>
+                <span className={`ml-1 text-[10px] ${active ? "text-white/80" : "text-white/45"}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Game tiles — category-colored glow per card */}
         <div className="grid grid-cols-2 gap-3">
-          {GAMES.map((g) => {
+          {GAMES.filter((g) => filter === "all" || g.category === filter).map((g) => {
             const enabled = isHost && room.players.length >= g.minPlayers;
+            const cat = CATEGORIES.find((c) => c.id === g.category)!;
+            // category-specific tint for the corner glow
+            const glowMap: Record<Category, string> = {
+              spill:  "rgba(255, 61, 110, 0.35)",
+              sleuth: "rgba(180, 107, 255, 0.35)",
+              quick:  "rgba(255, 138, 61, 0.35)",
+              play:   "rgba(61, 235, 255, 0.30)",
+            };
             return (
               <button
                 key={g.id}
                 disabled={!enabled}
                 onClick={() => selectGame(g.id)}
-                className={`card text-left transition-all group ${
-                  enabled ? "hover:-translate-y-1 hover:shadow-2xl hover:shadow-flame/30 hover:border-flame/40 active:scale-[0.97]" : "opacity-40 cursor-not-allowed"
+                data-disabled={!enabled}
+                className={`tile text-left p-4 ${
+                  enabled ? "" : "opacity-50"
                 }`}
+                style={{ ["--tile-glow-a" as string]: glowMap[g.category] }}
               >
-                <div className="text-4xl group-hover:scale-110 transition-transform">{g.emoji}</div>
-                <div className="title font-black mt-2 text-lg">{g.name}</div>
-                <div className="text-xs text-white/60 mt-1 leading-snug">{g.blurb}</div>
-                {room.players.length < g.minPlayers && (
-                  <div className="text-[10px] text-rose-400 mt-2 uppercase tracking-wider">Needs {g.minPlayers}+ players</div>
-                )}
+                <span className="tile-sheen" />
+                <div className="flex items-start justify-between relative">
+                  <div className="text-[9px] uppercase tracking-widest font-bold" style={{ color: `rgb(${cat.id === "spill" ? "var(--flame)" : cat.id === "sleuth" ? "var(--neon)" : cat.id === "quick" ? "var(--ember)" : "var(--cyber)"})` }}>
+                    {cat.emoji} {cat.label}
+                  </div>
+                </div>
+                <div className="text-5xl mt-1 tile-emoji relative">{g.emoji}</div>
+                <div className="title font-black mt-3 text-base leading-tight relative">{g.name}</div>
+                <div className="text-[11px] text-white/55 mt-1 leading-snug relative">{g.blurb}</div>
+                <div className="mt-3 flex items-center justify-between relative">
+                  <span className="chip border-white/15 text-white/60 text-[10px] !py-0.5">
+                    {g.minPlayers}+ players
+                  </span>
+                  {!enabled && room.players.length < g.minPlayers && (
+                    <span className="text-[9px] text-rose-400 uppercase tracking-wider font-bold">
+                      🔒 needs {g.minPlayers - room.players.length} more
+                    </span>
+                  )}
+                </div>
               </button>
             );
           })}

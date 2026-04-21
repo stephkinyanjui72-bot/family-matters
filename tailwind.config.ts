@@ -9,9 +9,11 @@ const config: Config = {
         flame: "#ff3d6e",
         ember: "#ff8a3d",
         neon: "#b46bff",
+        cyber: "#3debff",
       },
       fontFamily: {
-        display: ["ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
     },
   },

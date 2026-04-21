@@ -86,10 +86,20 @@ function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
-      <div className="text-center pop-in">
-        <div className="text-7xl mb-3 float-slow">🔥</div>
-        <h1 className="title text-5xl font-black holo-text">PARTY MATE</h1>
-        <p className="text-white/60 mt-2 uppercase tracking-[0.3em] text-xs">10 freaky games · one wild night</p>
+      <div className="text-center pop-in relative">
+        {/* Floating emoji halo around the wordmark */}
+        <div className="pointer-events-none absolute inset-x-0 -top-6 flex justify-center gap-8 text-2xl opacity-60 select-none">
+          <span style={{ animation: "drift 5s ease-in-out infinite" }}>🎉</span>
+          <span style={{ animation: "drift 6s ease-in-out infinite 0.5s" }}>💋</span>
+          <span style={{ animation: "drift 7s ease-in-out infinite 1s" }}>🔥</span>
+          <span style={{ animation: "drift 8s ease-in-out infinite 1.5s" }}>🍾</span>
+        </div>
+        <h1 className="wordmark holo-text text-[56px] sm:text-[72px] leading-[0.85] mt-6">
+          PARTY<br/>MATE
+        </h1>
+        <p className="text-white/60 mt-3 uppercase tracking-[0.35em] text-[10px] font-bold">
+          31 games · one wild night · 23+ option
+        </p>
       </div>
 
       {mode === "start" && (

@@ -1,10 +1,26 @@
 import type { Metadata, Viewport } from "next";
+import { Unbounded, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
+// Bold display font for wordmarks, game titles, big numbers.
+const display = Unbounded({
+  subsets: ["latin"],
+  weight: ["600", "700", "800", "900"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+// Clean body font for prompts, descriptions, UI copy.
+const body = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Party Mate — Party Games",
-  description: "27 party games for your next wild night.",
+  description: "31 party games for your next wild night.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -27,7 +43,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-screen">
         <Providers>{children}</Providers>
       </body>
