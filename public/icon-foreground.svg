@@ -1,9 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Foreground layer for Android adaptive icon.
-       Transparent background; the OS draws a shape mask around this. -->
-  <text x="20%" y="35%" text-anchor="middle" font-size="110" transform="rotate(-15 102 180)">✨</text>
-  <text x="80%" y="32%" text-anchor="middle" font-size="100" transform="rotate(20 410 160)">💋</text>
-  <text x="50%" y="68%" text-anchor="middle" font-family="system-ui, 'Segoe UI Emoji', sans-serif" font-size="280">🎉</text>
-  <text x="18%" y="85%" text-anchor="middle" font-size="90" transform="rotate(-10 92 435)">🔥</text>
-  <text x="85%" y="88%" text-anchor="middle" font-size="80" transform="rotate(15 435 450)">🍾</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Transparent-background version of the wordmark — used for Android
+       adaptive-icon foreground layer. The launcher applies its own shape
+       mask (circle / rounded square / squircle) on top. -->
+  <defs>
+    <linearGradient id="text-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff6e6"/>
+    </linearGradient>
+    <filter id="wordmark-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1a0516" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <g
+    font-family="Unbounded, 'Segoe UI', Impact, 'Arial Black', sans-serif"
+    font-weight="900"
+    fill="url(#text-fill)"
+    text-anchor="middle"
+    filter="url(#wordmark-shadow)"
+  >
+    <text x="512" y="468" font-size="210" letter-spacing="6">PARTY</text>
+    <text x="512" y="720" font-size="210" letter-spacing="16">MATE</text>
+  </g>
 </svg>
