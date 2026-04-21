@@ -38,6 +38,11 @@ export const MIN_PLAYERS: Record<GameId, number> = {
   "five-second": 2,
   "forbidden-phrases": 3,
   "cheers-to-the-governor": 3,
+  "psychologist": 4,
+  "alphabet-story": 3,
+  "ghost": 3,
+  "name-game": 3,
+  "rapid-fire": 3,
 };
 
 export function initialGameState(gameId: GameId): unknown {
@@ -79,6 +84,32 @@ export function initialGameState(gameId: GameId): unknown {
       rules: {},             // { [num]: string }
       pendingRule: false,    // true when someone just hit 21 and must add a rule
       reached21: 0,          // how many full 1-21 rounds completed
+    };
+    case "psychologist": return {
+      psychologistIndex: 0,  // current guesser
+      rule: null,            // string; hidden from the psychologist client-side
+      phase: "idle",         // idle | playing | reveal
+    };
+    case "alphabet-story": return {
+      letterIndex: 0,        // 0 = A … 25 = Z, wraps
+      topic: null,           // optional "write a story about X"
+      sentences: [],         // [{ authorPid, text, letter }]
+    };
+    case "ghost": return {
+      turnIndex: 0,
+      letters: "",           // accumulated string (uppercase)
+      score: {},             // pid -> 0..5 (GHOST)
+      out: [],               // pids eliminated
+    };
+    case "name-game": return {
+      turnIndex: 0,
+      chain: [],             // [{ authorPid, name }]
+    };
+    case "rapid-fire": return {
+      victimIndex: 0,
+      prompts: null,         // string[] shown during the round
+      startedAt: null,
+      outcome: null,         // 'survived' | 'drank'
     };
   }
 }
@@ -445,6 +476,117 @@ export function reduceGame(
       if (action.type === "mistake") {
         // Somebody broke a rule → reset count, keep rules.
         return { gameState: { ...s, count: 0, pendingRule: false }, bags };
+      }
+      return null;
+    }
+    case "psychologist": {
+      // Any non-psychologist can draw a rule. Rule text sits in state but the
+      // client hides it from the current psychologist.
+      const psychologist = room.players[((s.psychologistIndex as number) || 0) % n];
+      if (action.type === "draw") {
+        if (actorPid === psychologist.id) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, rule: String(p.rule || ""), phase: "playing" }, bags: nextBags };
+      }
+      if (action.type === "reveal") {
+        return { gameState: { ...s, phase: "reveal" }, bags };
+      }
+      if (action.type === "next") {
+        return {
+          gameState: { ...s, psychologistIndex: (((s.psychologistIndex as number) || 0) + 1) % n, rule: null, phase: "idle" },
+          bags,
+        };
+      }
+      return null;
+    }
+    case "alphabet-story": {
+      const writer = room.players[((s.letterIndex as number) || 0) % n];
+      if (action.type === "setTopic") {
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return { gameState: { ...s, topic: String(p.topic || "") }, bags: nextBags };
+      }
+      if (action.type === "add") {
+        if (actorPid !== writer.id) return null;
+        const text = String(p.text || "").slice(0, 240).trim();
+        if (!text) return null;
+        const letter = String.fromCharCode(65 + (((s.letterIndex as number) || 0) % 26));
+        // Light hint: enforce first non-space character matches expected letter.
+        if (text.charAt(0).toUpperCase() !== letter) return null;
+        const sentences = Array.isArray(s.sentences) ? [...s.sentences] : [];
+        sentences.push({ authorPid: actorPid, text, letter });
+        return { gameState: { ...s, sentences, letterIndex: ((s.letterIndex as number) || 0) + 1 }, bags };
+      }
+      if (action.type === "reset") {
+        return { gameState: { ...s, letterIndex: 0, sentences: [] }, bags };
+      }
+      return null;
+    }
+    case "ghost": {
+      // No word validation (would need a dictionary). Instead, trust the group
+      // to call out completions manually; anyone can tap "gave a letter".
+      const current = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "addLetter") {
+        if (actorPid !== current.id) return null;
+        const letter = String(p.letter || "").toUpperCase();
+        if (!/^[A-Z]$/.test(letter)) return null;
+        return { gameState: { ...s, letters: String(s.letters || "") + letter, turnIndex: (((s.turnIndex as number) || 0) + 1) % n }, bags };
+      }
+      if (action.type === "giveGhost") {
+        // Someone gets a GHOST letter (ran out of ideas OR completed a word).
+        const target = p.playerId as string;
+        if (!target || !room.players.some((pl) => pl.id === target)) return null;
+        const score = { ...((s.score as Record<string, number>) || {}) };
+        const next = Math.min(5, (score[target] || 0) + 1);
+        score[target] = next;
+        const out = Array.isArray(s.out) ? [...(s.out as string[])] : [];
+        if (next === 5 && !out.includes(target)) out.push(target);
+        return { gameState: { ...s, score, out, letters: "" }, bags };
+      }
+      if (action.type === "resetRound") {
+        return { gameState: { ...s, letters: "" }, bags };
+      }
+      return null;
+    }
+    case "name-game": {
+      const current = room.players[((s.turnIndex as number) || 0) % n];
+      if (action.type === "addName") {
+        if (actorPid !== current.id) return null;
+        const name = String(p.name || "").slice(0, 60).trim();
+        if (!name) return null;
+        const chain = Array.isArray(s.chain) ? [...(s.chain as Array<{ authorPid: string; name: string }>)] : [];
+        chain.push({ authorPid: actorPid, name });
+        return { gameState: { ...s, chain, turnIndex: (((s.turnIndex as number) || 0) + 1) % n }, bags };
+      }
+      if (action.type === "giveUp") {
+        if (actorPid !== current.id) return null;
+        return { gameState: { ...s, turnIndex: (((s.turnIndex as number) || 0) + 1) % n }, bags };
+      }
+      if (action.type === "reset") {
+        return { gameState: { ...s, chain: [] }, bags };
+      }
+      return null;
+    }
+    case "rapid-fire": {
+      // Victim draws a round's worth of prompts (5 at once), timer runs,
+      // self-reports survived/drank at the end.
+      const victim = room.players[((s.victimIndex as number) || 0) % n];
+      if (action.type === "start") {
+        if (actorPid !== victim.id) return null;
+        const prompts = p.prompts as unknown[];
+        if (!Array.isArray(prompts) || prompts.length === 0) return null;
+        const nextBags = recordDrawn(bags, p.poolKey as string, p.index as number, p.poolSize as number);
+        return {
+          gameState: { ...s, prompts: prompts.map(String), startedAt: Date.now(), outcome: null },
+          bags: nextBags,
+        };
+      }
+      if (action.type === "judge") {
+        const outcome = p.outcome as string;
+        if (!["survived", "drank"].includes(outcome)) return null;
+        return { gameState: { ...s, outcome }, bags };
+      }
+      if (action.type === "next") {
+        return { gameState: { ...s, victimIndex: (((s.victimIndex as number) || 0) + 1) % n, prompts: null, startedAt: null, outcome: null }, bags };
       }
       return null;
     }

@@ -14,7 +14,12 @@ export type GameId =
   | "fictionary"
   | "five-second"
   | "forbidden-phrases"
-  | "cheers-to-the-governor";
+  | "cheers-to-the-governor"
+  | "psychologist"
+  | "alphabet-story"
+  | "ghost"
+  | "name-game"
+  | "rapid-fire";
 
 export interface Player {
   id: string;          // stable pid, survives reconnect

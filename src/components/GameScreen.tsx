@@ -15,6 +15,11 @@ import { Fictionary } from "./games/Fictionary";
 import { FiveSecond } from "./games/FiveSecond";
 import { ForbiddenPhrases } from "./games/ForbiddenPhrases";
 import { CheersToTheGovernor } from "./games/CheersToTheGovernor";
+import { Psychologist } from "./games/Psychologist";
+import { AlphabetStory } from "./games/AlphabetStory";
+import { Ghost } from "./games/Ghost";
+import { NameGame } from "./games/NameGame";
+import { RapidFire } from "./games/RapidFire";
 
 export function GameScreen() {
   const { room, isHost, exitGame } = useStore();
@@ -62,6 +67,11 @@ function GameRouter() {
     case "five-second": return <FiveSecond />;
     case "forbidden-phrases": return <ForbiddenPhrases />;
     case "cheers-to-the-governor": return <CheersToTheGovernor />;
+    case "psychologist": return <Psychologist />;
+    case "alphabet-story": return <AlphabetStory />;
+    case "ghost": return <Ghost />;
+    case "name-game": return <NameGame />;
+    case "rapid-fire": return <RapidFire />;
     default: return null;
   }
 }
