@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabaseServer";
-import { clampName, newPid } from "../../../_lib/roomHelpers";
+import { clampName, expireStaleRooms, newPid } from "../../../_lib/roomHelpers";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,10 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const pid = String(body.pid || "");
   const name = clampName(body.name, "Player");
+
+  // Sweep expired rooms before looking up — if this session is from yesterday,
+  // the room is already gone and we return a clean 404 so the client clears.
+  await expireStaleRooms();
 
   const sb = getAdminSupabase();
   const { data: room } = await sb.from("rooms").select("code").eq("code", code).maybeSingle();

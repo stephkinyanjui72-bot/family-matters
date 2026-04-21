@@ -137,7 +137,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // Heartbeat + stale-sweep while the player is in a room.
+  // Heartbeat + stale-sweep while the player is in a room. If the heartbeat
+  // reports the room is gone (expired server-side), tear down our session.
   useEffect(() => {
     if (!room?.code || !pid) return;
     const code = room.code;
@@ -145,11 +146,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const ping = async () => {
       if (!active) return;
       try {
-        await fetch(`/api/rooms/${encodeURIComponent(code)}/heartbeat`, {
+        const res = await fetch(`/api/rooms/${encodeURIComponent(code)}/heartbeat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pid }),
-        });
+        }).then((r) => r.json()).catch(() => null);
+        if (res && res.roomExists === false) {
+          // Server expired our room while we were idle — drop the ghost session.
+          setRoom(null);
+          setPid(null);
+          sessionRef.current = null;
+          saveSession(null);
+        }
       } catch {}
     };
     ping();
@@ -256,4 +264,35 @@ export function useStore() {
   const v = useContext(StoreCtx);
   if (!v) throw new Error("useStore must be inside StoreProvider");
   return v;
+}
+
+// Read-only peek at the cached session without going through the store.
+// Used by the home page to show a "leave stuck session" button.
+export function peekSession(): { code: string; pid: string; name: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LS_SESSION);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Hard-reset the stored session. Fire-and-forget — the server will expire
+// the room on its own, but calling leave makes it instant.
+export function clearStoredSession() {
+  if (typeof window === "undefined") return;
+  let stored: { code?: string; pid?: string } = {};
+  try {
+    const raw = localStorage.getItem(LS_SESSION);
+    if (raw) stored = JSON.parse(raw);
+  } catch {}
+  try { localStorage.removeItem(LS_SESSION); } catch {}
+  if (stored.code && stored.pid) {
+    fetch(`/api/rooms/${encodeURIComponent(stored.code)}/leave`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid: stored.pid }),
+    }).catch(() => {});
+  }
 }

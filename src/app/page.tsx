@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useStore } from "@/lib/store";
+import { clearStoredSession, peekSession, useStore } from "@/lib/store";
 import type { Intensity } from "@/lib/types";
 
 const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string; gate?: number }[] = [
@@ -32,6 +32,7 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pendingGate, setPendingGate] = useState<Intensity | null>(null);
+  const [stuckCode, setStuckCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (room) router.replace(`/room/${room.code}`);
@@ -42,7 +43,16 @@ function Home() {
       const cached = localStorage.getItem("party:name");
       if (cached) setName(cached);
     } catch {}
+    // Surface any lingering session so the user can force-leave it even if
+    // the auto-rejoin hasn't landed yet.
+    const session = peekSession();
+    if (session?.code) setStuckCode(session.code);
   }, []);
+
+  // Once the store successfully connects, the stuck-session banner goes away.
+  useEffect(() => {
+    if (room) setStuckCode(null);
+  }, [room]);
 
   const saveName = (n: string) => {
     setName(n);
@@ -83,6 +93,17 @@ function Home() {
         <div className="w-full max-w-sm flex flex-col gap-3 pop-in">
           <button className="btn-primary text-xl h-16" onClick={() => setMode("host")}>🎉 Host a Party</button>
           <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>📱 Join with Code</button>
+          {stuckCode && (
+            <button
+              className="text-center text-rose-300/80 text-xs mt-1 hover:text-rose-200 underline underline-offset-4"
+              onClick={() => {
+                clearStoredSession();
+                setStuckCode(null);
+              }}
+            >
+              ✕ Leave previous party ({stuckCode})
+            </button>
+          )}
           <a href="/download" className="text-center text-white/50 text-sm mt-2 hover:text-white underline underline-offset-4">
             📲 Get the Android app
           </a>

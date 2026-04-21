@@ -6,6 +6,11 @@ import crypto from "crypto";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+// Rooms auto-expire after 2 hours without any state change. The `rooms.updated_at`
+// column is bumped by a DB trigger on every write (player join/leave, game action,
+// heartbeat sweep), so genuinely active rooms keep sliding forward.
+export const ROOM_EXPIRE_MS = 2 * 60 * 60 * 1000;
+
 export function newPid() {
   return crypto.randomBytes(6).toString("hex");
 }
@@ -24,9 +29,18 @@ export function clampName(raw: unknown, fallback = "Player"): string {
   return s.slice(0, 20);
 }
 
+// Sweep any room that hasn't changed in the last ROOM_EXPIRE_MS. Cheap —
+// a single DELETE with a cutoff; rows cascade-delete their player rows.
+export async function expireStaleRooms(): Promise<void> {
+  const sb = getAdminSupabase();
+  const cutoff = new Date(Date.now() - ROOM_EXPIRE_MS).toISOString();
+  await sb.from("rooms").delete().lt("updated_at", cutoff);
+}
+
 // Read a single room + its players and shape it as the RoomSnapshot we pass to
-// the reducer. Also sweeps stale online flags.
+// the reducer. Sweeps expired rooms first so callers never see stale data.
 export async function loadRoomSnapshot(code: string): Promise<RoomSnapshot | null> {
+  await expireStaleRooms();
   const sb = getAdminSupabase();
   const upper = code.toUpperCase();
   const { data: room, error } = await sb.from("rooms").select("*").eq("code", upper).maybeSingle();
