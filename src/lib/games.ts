@@ -1,6 +1,6 @@
 import type { GameId } from "./types";
 
-export type Category = "spill" | "sleuth" | "quick" | "play";
+export type Category = "intimate" | "spill" | "sleuth" | "quick" | "play";
 
 export interface GameMeta {
   id: GameId;
@@ -21,22 +21,25 @@ export interface CategoryMeta {
 }
 
 export const CATEGORIES: CategoryMeta[] = [
-  { id: "spill",  label: "Spill",  emoji: "💋", tone: ["from-flame",     "to-ember"],     ring: "ring-flame/60" },
-  { id: "sleuth", label: "Sleuth", emoji: "🕵️", tone: ["from-neon",      "to-cyber"],     ring: "ring-neon/60" },
-  { id: "quick",  label: "Quick",  emoji: "⚡",  tone: ["from-ember",     "to-yellow-400"],ring: "ring-ember/60" },
-  { id: "play",   label: "Play",   emoji: "🎭", tone: ["from-cyber",     "to-emerald-400"],ring: "ring-cyber/60" },
+  { id: "intimate", label: "Intimate", emoji: "💘", tone: ["from-rose-600",  "to-flame"],     ring: "ring-rose-500/60" },
+  { id: "spill",    label: "Spill",    emoji: "💋", tone: ["from-flame",     "to-ember"],     ring: "ring-flame/60" },
+  { id: "sleuth",   label: "Sleuth",   emoji: "🕵️", tone: ["from-neon",      "to-cyber"],     ring: "ring-neon/60" },
+  { id: "quick",    label: "Quick",    emoji: "⚡",  tone: ["from-ember",     "to-yellow-400"],ring: "ring-ember/60" },
+  { id: "play",     label: "Play",     emoji: "🎭", tone: ["from-cyber",     "to-emerald-400"],ring: "ring-cyber/60" },
 ];
 
 export const CATEGORIES_BY_ID = Object.fromEntries(CATEGORIES.map((c) => [c.id, c])) as Record<Category, CategoryMeta>;
 
 export const GAMES: GameMeta[] = [
-  // Spill — confessions, truths, dares, reveal-heavy
-  { id: "truth-or-dare",          name: "Truth or Dare",         blurb: "Spill secrets or pay the price.",             emoji: "🎯",  minPlayers: 2, category: "spill" },
+  // Intimate — physical contact, kissing, whisper, romantic choice
+  { id: "truth-or-dare",          name: "Truth or Dare",         blurb: "Spill secrets or pay the price.",             emoji: "🎯",  minPlayers: 2, category: "intimate" },
+  { id: "paranoia",               name: "Paranoia",              blurb: "Whisper the question. Name a name.",          emoji: "🤫",  minPlayers: 3, category: "intimate" },
+
+  // Spill — confessions, reveals, group voting
   { id: "do-or-drink",            name: "Do or Drink",           blurb: "Take the challenge or take a shot.",          emoji: "🥃",  minPlayers: 2, category: "spill" },
   { id: "never-have-i-ever",      name: "Never Have I Ever",     blurb: "Put fingers down. No lies.",                  emoji: "✋",  minPlayers: 3, category: "spill" },
   { id: "most-likely-to",         name: "Most Likely To",        blurb: "Vote on who would actually do it.",           emoji: "🫵",  minPlayers: 3, category: "spill" },
   { id: "would-you-rather",       name: "Would You Rather",      blurb: "Impossible choices only.",                    emoji: "⚖️",  minPlayers: 2, category: "spill" },
-  { id: "paranoia",               name: "Paranoia",              blurb: "Whisper the question. Name a name.",          emoji: "🤫",  minPlayers: 3, category: "spill" },
   { id: "hot-seat",               name: "Hot Seat",              blurb: "Rapid-fire questions. One victim.",           emoji: "🔥",  minPlayers: 3, category: "spill" },
   { id: "the-jar",                name: "The Jar",               blurb: "Anonymous confessions. Guess whose.",         emoji: "🏺",  minPlayers: 3, category: "spill" },
 
@@ -61,9 +64,11 @@ export const GAMES: GameMeta[] = [
   { id: "green-glass-door",       name: "Green Glass Door",      blurb: "Crack the hidden rule.",                      emoji: "🚪",  minPlayers: 3, category: "quick" },
   { id: "name-game",              name: "The Name Game",         blurb: "Celebrity chain. Fail = drink.",              emoji: "🎬",  minPlayers: 3, category: "quick" },
 
-  // Play — perform, random, roleplay, classics
-  { id: "spin-the-bottle",        name: "Spin the Bottle",       blurb: "Classic chaos, digital spin.",                emoji: "🍾",  minPlayers: 3, category: "play" },
-  { id: "kiss-marry-avoid",       name: "Kiss / Marry / Avoid",  blurb: "Three names. Pick a fate.",                   emoji: "💋",  minPlayers: 2, category: "play" },
+  // Intimate (continued) — romantic/kissing classics
+  { id: "spin-the-bottle",        name: "Spin the Bottle",       blurb: "Classic chaos, digital spin.",                emoji: "🍾",  minPlayers: 3, category: "intimate" },
+  { id: "kiss-marry-avoid",       name: "Kiss / Marry / Avoid",  blurb: "Three names. Pick a fate.",                   emoji: "💋",  minPlayers: 2, category: "intimate" },
+
+  // Play — perform, random, roleplay
   { id: "reverse-charades",       name: "Reverse Charades",      blurb: "Everyone acts. One guesser.",                 emoji: "🎭",  minPlayers: 4, category: "play" },
   { id: "alphabet-story",         name: "Alphabet Story",        blurb: "A to Z, one sentence each.",                  emoji: "✏️",  minPlayers: 3, category: "play" },
   { id: "psychic",                name: "Psychic",               blurb: "Read the room's mind.",                       emoji: "🔮",  minPlayers: 4, category: "play" },
