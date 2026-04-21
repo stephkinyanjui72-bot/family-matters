@@ -24,7 +24,7 @@ function Home() {
   const router = useRouter();
   const params = useSearchParams();
   const prefilled = params.get("code") || "";
-  const { createRoom, joinRoom, room } = useStore();
+  const { createRoom, joinRoom, room, authUser, authLoading, signOut } = useStore();
 
   const [mode, setMode] = useState<"start" | "host" | "join">(prefilled ? "join" : "start");
   const [name, setName] = useState("");
@@ -65,13 +65,31 @@ function Home() {
   };
 
   const onHost = async () => {
+    if (!authUser) {
+      router.push("/auth/login?next=/");
+      return;
+    }
     if (!name.trim()) return setError("Enter your name");
     setBusy(true);
     setError(null);
-    const c = await createRoom(name.trim(), intensity);
+    const res = await createRoom(name.trim(), intensity);
     setBusy(false);
-    router.push(`/room/${c}`);
+    if (!res.ok) return setError(res.error || "Could not host");
+    if (res.code) router.push(`/room/${res.code}`);
   };
+
+  // Pre-fill display name from profile when user is signed in.
+  useEffect(() => {
+    if (authUser?.displayName && !name) setName(authUser.displayName);
+  }, [authUser, name]);
+
+  // Intensity tiers available depend on age tier. Server enforces too.
+  const availableTiers: Intensity[] = (() => {
+    if (!authUser) return ["mild", "spicy", "extreme", "chaos"]; // visible but the host flow redirects to login first
+    if (authUser.ageTier === "23+") return ["mild", "spicy", "extreme", "chaos"];
+    if (authUser.ageTier === "18-22") return ["mild", "spicy", "extreme"];
+    return ["mild"]; // under-18 shouldn't reach signup, but be defensive
+  })();
 
   const onJoin = async () => {
     if (!name.trim()) return setError("Enter your name");
@@ -85,7 +103,32 @@ function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-8 relative">
+      {/* Auth chip — top-right corner */}
+      <div className="absolute top-4 right-4 z-10">
+        {authLoading ? null : authUser ? (
+          <details className="relative">
+            <summary className="chip border-white/20 text-white/75 bg-white/5 cursor-pointer list-none">
+              👤 {authUser.displayName || authUser.email?.split("@")[0] || "me"}
+            </summary>
+            <div className="absolute right-0 mt-2 card !p-3 w-56 flex flex-col gap-2 text-sm">
+              <div className="text-white/50 text-xs truncate">{authUser.email}</div>
+              <div className="text-[10px] uppercase tracking-widest text-flame">
+                {authUser.ageTier === "23+" ? "All tiers" : authUser.ageTier === "18-22" ? "Chaos locked (23+)" : "Limited"}
+              </div>
+              {!authUser.emailVerified && (
+                <a href={`/auth/verify-email?email=${encodeURIComponent(authUser.email || "")}`} className="text-[11px] text-amber-300 hover:underline">
+                  ⚠ Verify your email
+                </a>
+              )}
+              <button className="btn-ghost !py-1.5 !text-xs" onClick={() => signOut()}>Sign out</button>
+            </div>
+          </details>
+        ) : (
+          <a href="/auth/login" className="chip border-flame/40 text-flame bg-flame/10">Log in</a>
+        )}
+      </div>
+
       <div className="text-center pop-in relative">
         {/* Floating emoji halo around the wordmark */}
         <div className="pointer-events-none absolute inset-x-0 -top-6 flex justify-center gap-8 text-2xl opacity-60 select-none">
@@ -104,7 +147,18 @@ function Home() {
 
       {mode === "start" && (
         <div className="w-full max-w-sm flex flex-col gap-3 pop-in">
-          <button className="btn-primary text-xl h-16" onClick={() => setMode("host")}>🎉 Host a Party</button>
+          <button
+            className="btn-primary text-xl h-16"
+            onClick={() => {
+              if (!authUser && !authLoading) {
+                router.push("/auth/login?next=/");
+                return;
+              }
+              setMode("host");
+            }}
+          >
+            🎉 Host a Party
+          </button>
           <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>📱 Join with Code</button>
           {stuckCode && (
             <button
@@ -147,27 +201,37 @@ function Home() {
           <div className="flex flex-col gap-2">
             <span className="text-sm text-white/60">Intensity</span>
             <div className="grid grid-cols-2 gap-2">
-              {INTENSITIES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    if (t.gate) {
-                      const confirmed = localStorage.getItem(`ageOK:${t.gate}`) === "1";
-                      if (!confirmed) return setPendingGate(t.id);
-                    }
-                    setIntensity(t.id);
-                  }}
-                  className={`rounded-xl py-3 text-sm font-semibold border transition ${
-                    intensity === t.id
-                      ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
-                      : "bg-white/5 border-white/10 text-white/70"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+              {INTENSITIES.map((t) => {
+                const locked = !availableTiers.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    disabled={locked}
+                    onClick={() => {
+                      if (t.gate) {
+                        const confirmed = localStorage.getItem(`ageOK:${t.gate}`) === "1";
+                        if (!confirmed) return setPendingGate(t.id);
+                      }
+                      setIntensity(t.id);
+                    }}
+                    className={`rounded-xl py-3 text-sm font-semibold border transition ${
+                      intensity === t.id
+                        ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
+                        : locked
+                        ? "bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
+                        : "bg-white/5 border-white/10 text-white/70"
+                    }`}
+                  >
+                    {locked && "🔒 "}{t.label}
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-xs text-white/50">{INTENSITIES.find((t) => t.id === intensity)?.hint}</p>
+            <p className="text-xs text-white/50">
+              {availableTiers.includes(intensity)
+                ? INTENSITIES.find((t) => t.id === intensity)?.hint
+                : "Locked for your age tier"}
+            </p>
           </div>
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">

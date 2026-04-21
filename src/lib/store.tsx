@@ -8,12 +8,24 @@ const HEARTBEAT_INTERVAL_MS = 15_000;
 
 type Session = { code: string; pid: string; name: string };
 
+export type AuthUser = {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  birthdate: string | null;          // ISO date
+  ageTier: "under-18" | "18-22" | "23+" | null;
+  emailVerified: boolean;
+};
+
 type Ctx = {
   room: Room | null;
   pid: string | null;
   isHost: boolean;
   me: Room["players"][0] | null;
   connected: boolean;
+  authUser: AuthUser | null;         // null = not signed in
+  authLoading: boolean;              // true until first auth-state check resolves
+  signOut: () => Promise<void>;
   createRoom: (name: string, intensity: Intensity) => Promise<{ ok: boolean; code?: string; error?: string }>;
   joinRoom: (code: string, name: string) => Promise<{ ok: boolean; code?: string; error?: string }>;
   leaveRoom: () => void;
@@ -73,8 +85,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [pid, setPid] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const sessionRef = useRef<Session | null>(null);
   const subCodeRef = useRef<string | null>(null);
+
+  // Hydrate auth state on mount + subscribe to future changes (sign in /
+  // sign out from any tab).
+  useEffect(() => {
+    const sb = getSupabase();
+    let alive = true;
+
+    const hydrate = async (userId: string | null) => {
+      if (!userId) {
+        if (alive) { setAuthUser(null); setAuthLoading(false); }
+        return;
+      }
+      // Pull the profile row so we have display_name + birthdate + ageTier.
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("display_name, birthdate")
+        .eq("id", userId)
+        .maybeSingle();
+      const { data: userRes } = await sb.auth.getUser();
+      const user = userRes.user;
+      const dob = (profile as { birthdate?: string | null } | null)?.birthdate ?? null;
+      const ageTier = computeAgeTier(dob);
+      if (alive) {
+        setAuthUser({
+          id: userId,
+          email: user?.email ?? null,
+          displayName: (profile as { display_name?: string | null } | null)?.display_name ?? null,
+          birthdate: dob,
+          ageTier,
+          emailVerified: !!user?.email_confirmed_at,
+        });
+        setAuthLoading(false);
+      }
+    };
+
+    sb.auth.getSession().then(({ data }) => hydrate(data.session?.user?.id ?? null));
+
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      hydrate(session?.user?.id ?? null);
+    });
+
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   // Subscribe to realtime updates for the given room code. Any DB change triggers
   // a full refetch — simpler than merging deltas and the payloads are tiny.
@@ -166,9 +226,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [room?.code, pid]);
 
   const createRoom = useCallback<Ctx["createRoom"]>(async (name, intensity) => {
+    // Forward the Supabase access token so the server can verify the
+    // authenticated user + enforce the 18+/23+ age rules.
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) return { ok: false, error: "Sign in to host" };
     const res = await fetch(`/api/rooms`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ name, intensity }),
     }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
     if (!res?.ok || !res.code || !res.pid) return { ok: false, error: res?.error || "Could not create" };
@@ -248,11 +316,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   }, [room?.code, pid]);
 
+  const signOut = useCallback(async () => {
+    const sb = getSupabase();
+    await sb.auth.signOut();
+    setAuthUser(null);
+  }, []);
+
   const me = useMemo(() => room?.players.find((p) => p.id === pid) || null, [room, pid]);
   const isHost = !!me?.isHost;
 
   const value: Ctx = {
     room, pid, isHost, me, connected,
+    authUser, authLoading, signOut,
     createRoom, joinRoom, leaveRoom,
     setIntensity, selectGame, exitGame, gameAction,
   };
@@ -264,6 +339,20 @@ export function useStore() {
   const v = useContext(StoreCtx);
   if (!v) throw new Error("useStore must be inside StoreProvider");
   return v;
+}
+
+// Compute age tier from a birthdate string (YYYY-MM-DD).
+function computeAgeTier(dob: string | null): AuthUser["ageTier"] {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  if (age < 18) return "under-18";
+  if (age < 23) return "18-22";
+  return "23+";
 }
 
 // Read-only peek at the cached session without going through the store.
