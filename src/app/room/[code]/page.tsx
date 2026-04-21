@@ -8,11 +8,53 @@ import type { Intensity } from "@/lib/types";
 import { GameScreen } from "@/components/GameScreen";
 import { ExitSessionButton } from "@/components/ExitSessionButton";
 
-const TIERS: { id: Intensity; label: string; tone: string }[] = [
-  { id: "mild", label: "Mild", tone: "from-emerald-400 to-teal-400" },
-  { id: "spicy", label: "Spicy", tone: "from-flame to-ember" },
-  { id: "extreme", label: "Extreme", tone: "from-fuchsia-500 to-rose-500" },
-  { id: "chaos", label: "Chaos 23+", tone: "from-rose-600 via-fuchsia-700 to-purple-700" },
+const TIERS: {
+  id: Intensity;
+  label: string;
+  emoji: string;
+  // Gradient used when selected (Tailwind class string)
+  tone: string;
+  // Soft tinted background hint for unselected state
+  hintBg: string;
+  hintBorder: string;
+  hintText: string;
+}[] = [
+  {
+    id: "mild",
+    label: "Mild",
+    emoji: "🌿",
+    tone: "from-emerald-500 via-teal-500 to-cyan-500",
+    hintBg: "bg-emerald-500/10",
+    hintBorder: "border-emerald-400/30",
+    hintText: "text-emerald-200",
+  },
+  {
+    id: "spicy",
+    label: "Spicy",
+    emoji: "🌶️",
+    tone: "from-flame via-ember to-yellow-400",
+    hintBg: "bg-flame/10",
+    hintBorder: "border-flame/40",
+    hintText: "text-flame",
+  },
+  {
+    id: "extreme",
+    label: "Extreme",
+    emoji: "🔥",
+    tone: "from-fuchsia-600 via-pink-600 to-rose-500",
+    hintBg: "bg-fuchsia-500/10",
+    hintBorder: "border-fuchsia-400/40",
+    hintText: "text-fuchsia-300",
+  },
+  {
+    id: "chaos",
+    label: "Chaos 23+",
+    emoji: "💀",
+    tone: "from-purple-900 via-rose-800 to-red-900",
+    hintBg: "bg-rose-900/20",
+    hintBorder: "border-rose-700/50",
+    hintText: "text-rose-300",
+  },
 ];
 
 export default function RoomPage() {
@@ -151,29 +193,33 @@ export default function RoomPage() {
           </div>
         {isHost ? (
           <div className="grid grid-cols-2 gap-2">
-            {TIERS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  if (t.id === "chaos") {
-                    const ok = typeof window !== "undefined" && localStorage.getItem("ageOK:23") === "1";
-                    if (!ok) {
-                      const confirm = window.confirm("Chaos mode is 23+ only. Everyone playing 23 or older and consenting?");
-                      if (!confirm) return;
-                      try { localStorage.setItem("ageOK:23", "1"); } catch {}
+            {TIERS.map((t) => {
+              const active = room.intensity === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    if (t.id === "chaos") {
+                      const ok = typeof window !== "undefined" && localStorage.getItem("ageOK:23") === "1";
+                      if (!ok) {
+                        const confirm = window.confirm("Chaos mode is 23+ only. Everyone playing 23 or older and consenting?");
+                        if (!confirm) return;
+                        try { localStorage.setItem("ageOK:23", "1"); } catch {}
+                      }
                     }
-                  }
-                  setIntensity(t.id);
-                }}
-                className={`rounded-xl py-2 text-sm font-semibold border transition ${
-                  room.intensity === t.id
-                    ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
-                    : "bg-white/5 border-white/10 text-white/70"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+                    setIntensity(t.id);
+                  }}
+                  className={`rounded-xl py-2.5 px-3 text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
+                    active
+                      ? `bg-gradient-to-br ${t.tone} border-white/40 text-white shadow-lg shadow-black/40`
+                      : `${t.hintBg} ${t.hintBorder} ${t.hintText} hover:brightness-125`
+                  }`}
+                >
+                  <span className="text-base">{t.emoji}</span>
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <p className="text-white/50 text-sm">Only the host changes the intensity.</p>
