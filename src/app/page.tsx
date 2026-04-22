@@ -120,7 +120,9 @@ function Home() {
   const onJoin = async () => {
     if (!name.trim()) return setError("Enter your name");
     if (!code.trim()) return setError("Enter a room code");
-    if (!joinerAdult) return setError("You must confirm you're 18 or older");
+    // The 18+ checkbox is only required for guests (no authed user). For
+    // authed users the server knows their age and gates automatically.
+    if (!authUser && !joinerAdult) return setError("You must confirm you're 18 or older");
     setBusy(true);
     setError(null);
     const res = await joinRoom(code.trim().toUpperCase(), name.trim());
@@ -299,21 +301,34 @@ function Home() {
               placeholder="ABCD"
             />
           </label>
-          <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={joinerAdult}
-              onChange={(e) => setJoinerAdult(e.target.checked)}
-              className="mt-0.5 accent-flame w-4 h-4 shrink-0"
-            />
-            <span>
-              I confirm I am <b>18 or older</b> and understand this room may contain adult content.
-            </span>
-          </label>
+          {authUser ? (
+            // Authed users: age is on file, server gates automatically.
+            authUser.ageTier === "under-18" ? (
+              <p className="text-[11px] text-white/50">
+                🌿 Teen accounts can only join party-safe rooms.
+              </p>
+            ) : null
+          ) : (
+            <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={joinerAdult}
+                onChange={(e) => setJoinerAdult(e.target.checked)}
+                className="mt-0.5 accent-flame w-4 h-4 shrink-0"
+              />
+              <span>
+                I confirm I am <b>18 or older</b> and understand this room may contain adult content.
+              </span>
+            </label>
+          )}
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>
-            <button className="btn-primary flex-1" onClick={onJoin} disabled={busy || !joinerAdult}>
+            <button
+              className="btn-primary flex-1"
+              onClick={onJoin}
+              disabled={busy || (!authUser && !joinerAdult)}
+            >
               {busy ? "…" : "Join"}
             </button>
           </div>

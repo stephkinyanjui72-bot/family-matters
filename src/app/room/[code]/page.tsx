@@ -60,7 +60,7 @@ const TIERS: {
 export default function RoomPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
-  const { room, me, isHost, connected, setIntensity, selectGame, authUser } = useStore();
+  const { room, me, isHost, connected, setIntensity, selectGame, authUser, kickPlayer } = useStore();
   const isTeen = authUser?.ageTier === "under-18";
   // For teen accounts, the app hides adult tiers AND adult-themed games
   // entirely — they don't see them anywhere in the UI.
@@ -264,7 +264,22 @@ export default function RoomPage() {
                 }`}
               >
                 <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.online ? (p.isHost ? "bg-flame" : "bg-emerald-400") : "bg-white/30"}`} />
-                {p.name}{p.isHost && " · host"}{!p.online && " · offline"}
+                <span>{p.name}{p.isHost && " · host"}{!p.online && " · offline"}</span>
+                {/* Host can remove a disruptive non-host player. Hidden for
+                    non-hosts and for the host's own chip. */}
+                {isHost && !p.isHost && (
+                  <button
+                    aria-label={`Kick ${p.name}`}
+                    onClick={() => {
+                      if (typeof window === "undefined") return;
+                      const ok = window.confirm(`Remove ${p.name} from the party?`);
+                      if (ok) kickPlayer(p.id);
+                    }}
+                    className="ml-1 text-rose-400/80 hover:text-rose-300 text-[14px] leading-none"
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             ))}
           </ul>

@@ -34,6 +34,7 @@ type Ctx = {
   selectGame: (g: GameId) => void;
   exitGame: () => void;
   gameAction: (type: string, payload?: unknown) => void;
+  kickPlayer: (targetPid: string) => void;
 };
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -253,9 +254,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const joinRoom = useCallback<Ctx["joinRoom"]>(async (code, name) => {
     const upper = code.toUpperCase();
+    // Forward the Bearer token when authed so the server can age-gate
+    // under-18 accounts out of Extreme/Chaos rooms. Guests just send name.
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
     const res = await fetch(`/api/rooms/${encodeURIComponent(upper)}/join`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ name }),
     }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
     if (!res?.ok || !res.code || !res.pid) return { ok: false, error: res?.error || "Could not join" };
@@ -319,6 +326,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   }, [room?.code, pid]);
 
+  const kickPlayer = useCallback((targetPid: string) => {
+    if (!room?.code || !pid) return;
+    fetch(`/api/rooms/${encodeURIComponent(room.code)}/kick`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid, target: targetPid }),
+    }).catch(() => {});
+  }, [room?.code, pid]);
+
   const signOut = useCallback(async () => {
     const sb = getSupabase();
     await sb.auth.signOut();
@@ -332,7 +348,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     room, pid, isHost, me, connected,
     authUser, authLoading, signOut,
     createRoom, joinRoom, leaveRoom,
-    setIntensity, selectGame, exitGame, gameAction,
+    setIntensity, selectGame, exitGame, gameAction, kickPlayer,
   };
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
