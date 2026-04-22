@@ -25,11 +25,13 @@ export default function TermsPage() {
 
         <div>
           <h2 className="title font-bold text-white mb-1">2. Who can use it</h2>
-          <p>You must be at least <b>18 years old</b> to create an account and host a game.
-          All intensity tiers (including Chaos) are available to every 18+ account.
-          You are responsible for confirming that everyone in the room you host is
-          an adult and is comfortable with the content you pick.
-          Don't invite minors to the game.</p>
+          <p>You must be at least <b>13 years old</b> to create an account.
+          Under-18 accounts see a teen-safe version of the app with a curated
+          subset of games and Mild-tier content only — adult tiers and adult-themed
+          games are hidden entirely. Adult tiers (Spicy, Extreme, Chaos) unlock at
+          age 18, based on the birthdate on your profile. Hosts are responsible
+          for confirming that everyone in the room is comfortable with the
+          content for the chosen tier.</p>
         </div>
 
         <div>

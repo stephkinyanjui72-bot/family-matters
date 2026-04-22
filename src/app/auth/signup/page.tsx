@@ -7,8 +7,10 @@ import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
 import { Footer } from "@/components/Footer";
 
-// Minimum age to create an account. Any 18+ account unlocks all tiers.
-const MIN_AGE = 18;
+// Minimum age to create an account. Under-18 accounts get a kid-safe
+// version of the app (Mild tier only, adult games hidden); 18+ accounts
+// unlock all tiers.
+const MIN_AGE = 13;
 
 function yearsSince(dob: string): number {
   const d = new Date(dob);
@@ -109,7 +111,7 @@ export default function SignupPage() {
               onChange={(e) => setBirthdate(e.target.value)}
               max={new Date().toISOString().slice(0, 10)}
             />
-            <span className="text-[11px] text-white/45">18+ required · unlocks all tiers</span>
+            <span className="text-[11px] text-white/45">13+ to sign up · adult tiers unlock at 18</span>
           </label>
 
           <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer mt-1">
@@ -120,7 +122,7 @@ export default function SignupPage() {
               className="mt-0.5 accent-flame w-4 h-4 shrink-0"
             />
             <span>
-              I'm 18+ and I agree to the{" "}
+              I agree to the{" "}
               <Link href="/terms" className="text-flame hover:underline" target="_blank">Terms</Link>
               {" "}and{" "}
               <Link href="/privacy" className="text-flame hover:underline" target="_blank">Privacy Policy</Link>.

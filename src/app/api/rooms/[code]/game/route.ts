@@ -31,6 +31,32 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   }
 
   const sb = getAdminSupabase();
+
+  // Adult-only game check: if the host's account is under 18, reject games
+  // with minorSafe=false. Host info comes from the room row we already have.
+  const gameMeta = GAMES_BY_ID[gameId];
+  if (!gameMeta.minorSafe) {
+    const { data: room } = await sb.from("rooms").select("host_user_id").eq("code", code).maybeSingle();
+    const hostUserId = (room as { host_user_id?: string | null } | null)?.host_user_id;
+    if (hostUserId) {
+      const { data: profile } = await sb.from("profiles").select("birthdate").eq("id", hostUserId).maybeSingle();
+      const dob = (profile as { birthdate?: string | null } | null)?.birthdate ?? null;
+      if (dob) {
+        const d = new Date(dob);
+        const now = new Date();
+        let age = now.getFullYear() - d.getFullYear();
+        const m = now.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+        if (age < 18) {
+          return NextResponse.json(
+            { ok: false, error: "That game isn't available on teen accounts" },
+            { status: 403 },
+          );
+        }
+      }
+    }
+  }
+
   const { error } = await sb.from("rooms").update({
     current_game: gameId,
     game_state: initialGameState(gameId) as object,

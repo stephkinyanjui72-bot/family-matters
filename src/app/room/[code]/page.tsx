@@ -60,7 +60,11 @@ const TIERS: {
 export default function RoomPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
-  const { room, me, isHost, connected, setIntensity, selectGame } = useStore();
+  const { room, me, isHost, connected, setIntensity, selectGame, authUser } = useStore();
+  const isTeen = authUser?.ageTier === "under-18";
+  // For teen accounts, the app hides adult tiers AND adult-themed games
+  // entirely — they don't see them anywhere in the UI.
+  const visibleGames = isTeen ? GAMES.filter((g) => g.minorSafe) : GAMES;
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>("");
@@ -267,42 +271,44 @@ export default function RoomPage() {
         </section>
       </div>
 
-      <div className="section-frame">
-        <section className="card">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold">Intensity</h3>
-            <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
-          </div>
-        {isHost ? (
-          <div className="grid grid-cols-2 gap-2">
-            {TIERS.map((t) => {
-              const active = room.intensity === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setIntensity(t.id)}
-                  className={`rounded-xl py-2.5 px-3 text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
-                    active
-                      ? `bg-gradient-to-br ${t.tone} border-white/40 text-white shadow-lg shadow-black/40`
-                      : `${t.hintBg} ${t.hintBorder} ${t.hintText} hover:brightness-125`
-                  }`}
-                >
-                  <span className="text-base">{t.emoji}</span>
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-white/50 text-sm">Only the host changes the intensity.</p>
-        )}
-        </section>
-      </div>
+      {!isTeen && (
+        <div className="section-frame">
+          <section className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold">Intensity</h3>
+              <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
+            </div>
+            {isHost ? (
+              <div className="grid grid-cols-2 gap-2">
+                {TIERS.map((t) => {
+                  const active = room.intensity === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setIntensity(t.id)}
+                      className={`rounded-xl py-2.5 px-3 text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
+                        active
+                          ? `bg-gradient-to-br ${t.tone} border-white/40 text-white shadow-lg shadow-black/40`
+                          : `${t.hintBg} ${t.hintBorder} ${t.hintText} hover:brightness-125`
+                      }`}
+                    >
+                      <span className="text-base">{t.emoji}</span>
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-white/50 text-sm">Only the host changes the intensity.</p>
+            )}
+          </section>
+        </div>
+      )}
 
       <section>
         <div className="flex items-baseline justify-between mb-3">
           <h3 className="title text-xl font-black uppercase tracking-wider">Pick a Game</h3>
-          <span className="text-[10px] uppercase tracking-widest text-white/40">{GAMES.length} games</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/40">{visibleGames.length} games</span>
         </div>
 
         {/* Category filter row — horizontal scroll on narrow screens */}
@@ -319,7 +325,7 @@ export default function RoomPage() {
           </button>
           {CATEGORIES.map((cat) => {
             const active = filter === cat.id;
-            const count = GAMES.filter((g) => g.category === cat.id).length;
+            const count = visibleGames.filter((g) => g.category === cat.id).length;
             return (
               <button
                 key={cat.id}
@@ -340,7 +346,7 @@ export default function RoomPage() {
 
         {/* Game tiles — cartoon style with halo + confetti per card */}
         <div className="grid grid-cols-2 gap-3">
-          {GAMES.filter((g) => filter === "all" || g.category === filter).map((g) => {
+          {visibleGames.filter((g) => filter === "all" || g.category === filter).map((g) => {
             const enabled = isHost && room.players.length >= g.minPlayers;
             const cat = CATEGORIES.find((c) => c.id === g.category)!;
             // per-category color map for accents (glow, halo, text)

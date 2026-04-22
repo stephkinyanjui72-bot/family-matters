@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid session" }, { status: 401 });
   }
 
-  // Age check: user must be 18+ to host anything. 18+ accounts get all tiers.
+  // Age check: 13+ to host at all. Under-18 can only host Mild-tier rooms
+  // (adult-only tiers are hidden from them in the UI too).
   const { data: profile } = await sb
     .from("profiles")
     .select("birthdate, display_name")
@@ -46,8 +47,14 @@ export async function POST(req: Request) {
     .maybeSingle();
   const dob = (profile as { birthdate?: string | null } | null)?.birthdate ?? null;
   const age = computeAge(dob);
-  if (age === null || age < 18) {
-    return NextResponse.json({ ok: false, error: "18+ account required" }, { status: 403 });
+  if (age === null) {
+    return NextResponse.json({ ok: false, error: "Birthdate missing on profile" }, { status: 403 });
+  }
+  if (age < 13) {
+    return NextResponse.json({ ok: false, error: "13+ account required" }, { status: 403 });
+  }
+  if (age < 18 && intensity !== "mild") {
+    return NextResponse.json({ ok: false, error: "Teen accounts can only host Mild parties" }, { status: 403 });
   }
   // ----------------------------------------------------------------------
 

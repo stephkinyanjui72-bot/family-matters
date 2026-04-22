@@ -103,6 +103,11 @@ function Home() {
     if (authUser?.displayName && !name) setName(authUser.displayName);
   }, [authUser, name]);
 
+  // Force teen accounts onto Mild tier — they can't see or pick anything else.
+  useEffect(() => {
+    if (authUser?.ageTier === "under-18" && intensity !== "mild") setIntensity("mild");
+  }, [authUser?.ageTier, intensity]);
+
   // Intensity tiers available depend on age tier. Signup enforces 18+, so
   // every authenticated user gets all four tiers. Under-18 falls back to
   // mild only (defensive — they shouldn't reach host in the first place).
@@ -136,7 +141,7 @@ function Home() {
             <div className="absolute right-0 mt-2 card !p-3 w-56 flex flex-col gap-2 text-sm">
               <div className="text-white/50 text-xs truncate">{authUser.email}</div>
               <div className="text-[10px] uppercase tracking-widest text-flame">
-                {authUser.ageTier === "under-18" ? "Mild only" : "All tiers"}
+                {authUser.ageTier === "under-18" ? "Teen mode" : "All tiers"}
               </div>
               {!authUser.emailVerified && (
                 <a href={`/auth/verify-email?email=${encodeURIComponent(authUser.email || "")}`} className="text-[11px] text-amber-300 hover:underline">
@@ -164,7 +169,9 @@ function Home() {
           PARTY<br/>MATE
         </h1>
         <p className="text-white/60 mt-3 uppercase tracking-[0.35em] text-[10px] font-bold">
-          31 games · one wild night · 18+
+          {authUser?.ageTier === "under-18"
+            ? "26 party games · teen mode"
+            : "31 games · one wild night · 18+"}
         </p>
       </div>
 
@@ -229,29 +236,36 @@ function Home() {
               placeholder="e.g. Alex"
             />
           </label>
-          <div className="flex flex-col gap-2">
-            <span className="text-sm text-white/60">Intensity</span>
-            <div className="grid grid-cols-2 gap-2">
-              {INTENSITIES.filter((t) => availableTiers.includes(t.id)).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setIntensity(t.id)}
-                  className={`rounded-xl py-3 text-sm font-semibold border transition ${
-                    intensity === t.id
-                      ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
-                      : "bg-white/5 border-white/10 text-white/70"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-white/50">
-              {availableTiers.includes(intensity)
-                ? INTENSITIES.find((t) => t.id === intensity)?.hint
-                : "—"}
+          {authUser?.ageTier === "under-18" ? (
+            // Teen accounts: no intensity choice — always Mild, not even mentioned.
+            <p className="text-xs text-white/50 uppercase tracking-widest text-center">
+              🌿 teen mode · party-safe content
             </p>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <span className="text-sm text-white/60">Intensity</span>
+              <div className="grid grid-cols-2 gap-2">
+                {INTENSITIES.filter((t) => availableTiers.includes(t.id)).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setIntensity(t.id)}
+                    className={`rounded-xl py-3 text-sm font-semibold border transition ${
+                      intensity === t.id
+                        ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
+                        : "bg-white/5 border-white/10 text-white/70"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-white/50">
+                {availableTiers.includes(intensity)
+                  ? INTENSITIES.find((t) => t.id === intensity)?.hint
+                  : "—"}
+              </p>
+            </div>
+          )}
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>

@@ -45,10 +45,15 @@ export default function ProfilePage() {
     setNameBusy(true);
     setNameMsg(null);
     const sb = getSupabase();
-    const { error } = await sb
-      .from("profiles")
-      .update({ display_name: trimmed })
-      .eq("id", authUser.id);
+    // Supabase-js without generated types loses the table shape and rejects
+    // untyped update payloads; cast through unknown to sidestep.
+    type ProfilesUpdate = {
+      update: (v: Record<string, unknown>) => {
+        eq: (k: string, v: string) => Promise<{ error: { message: string } | null }>;
+      };
+    };
+    const table = sb.from("profiles") as unknown as ProfilesUpdate;
+    const { error } = await table.update({ display_name: trimmed }).eq("id", authUser.id);
     setNameBusy(false);
     if (error) {
       setNameMsg(error.message);

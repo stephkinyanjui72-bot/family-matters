@@ -26,10 +26,11 @@ export default function PrivacyPage() {
 
         <div>
           <h2 className="title font-bold text-white mb-1">2. How we use it</h2>
-          <p>Your email and password let you sign in. Your birthdate confirms you're
-          18+ (required to host). All intensity tiers are available to every 18+
-          account. Your display name shows in rooms you join. That's it — we don't
-          profile you or sell anything to advertisers.</p>
+          <p>Your email and password let you sign in. Your birthdate determines
+          which version of the app you see: under-18 accounts get a teen-safe
+          subset (Mild content, curated games) while 18+ accounts unlock all
+          tiers and games. Your display name shows in rooms you join. That's it
+          — we don't profile you or sell anything to advertisers.</p>
         </div>
 
         <div>
@@ -70,8 +71,10 @@ export default function PrivacyPage() {
 
         <div>
           <h2 className="title font-bold text-white mb-1">8. Minors</h2>
-          <p>Party Mate is for adults. Accounts must be 18+. We do not knowingly
-          collect data from users under 18. If you believe a minor has signed up,
+          <p>Party Mate accepts accounts from age 13 upward. Under-18 accounts
+          are automatically served a teen-safe experience — adult games and
+          adult-tier content are hidden from them entirely. We do not knowingly
+          collect data from users under 13. If you believe a user is under 13,
           contact us and we'll remove the account.</p>
         </div>
 
