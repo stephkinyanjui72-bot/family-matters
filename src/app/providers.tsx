@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { StoreProvider } from "@/lib/store";
+import { I18nProvider } from "@/lib/i18n/context";
 import { ReconnectOverlay } from "@/components/ReconnectOverlay";
 import { installDeepLinkHandler } from "@/lib/nativeAuth";
 import { installBackButtonHandler } from "@/lib/nativeBack";
@@ -31,18 +32,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <StoreProvider>
-      {children}
-      <ReconnectOverlay />
-      {toast && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-sm font-bold shadow-xl pop-in ${
-          toast.kind === "ok"
-            ? "bg-emerald-500 text-white"
-            : "bg-rose-600 text-white"
-        }`}>
-          {toast.kind === "ok" ? "✓ " : "✕ "}{toast.text}
-        </div>
-      )}
-    </StoreProvider>
+    <I18nProvider>
+      <StoreProvider>
+        {children}
+        <ReconnectOverlay />
+        {toast && (
+          <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-sm font-bold shadow-xl pop-in ${
+            toast.kind === "ok"
+              ? "bg-emerald-500 text-white"
+              : "bg-rose-600 text-white"
+          }`}>
+            {toast.kind === "ok" ? "✓ " : "✕ "}{toast.text}
+          </div>
+        )}
+      </StoreProvider>
+    </I18nProvider>
   );
 }

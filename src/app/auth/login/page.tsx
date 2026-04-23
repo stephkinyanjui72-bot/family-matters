@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n/context";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
 import { Footer } from "@/components/Footer";
@@ -22,6 +23,7 @@ function Login() {
   const params = useSearchParams();
   const redirectTo = params.get("next") || "/";
   const { authUser } = useStore();
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -37,7 +39,7 @@ function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
-    if (!email.trim() || !password) return setErr("Email and password required");
+    if (!email.trim() || !password) return setErr(`${t("auth.emailLabel")} / ${t("auth.passwordLabel")}`);
     setBusy(true);
     const sb = getSupabase();
     const { error } = await sb.auth.signInWithPassword({
@@ -54,12 +56,12 @@ function Login() {
       <div className="w-full max-w-sm card-glow flex flex-col gap-4 pop-in">
         <div className="text-center">
           <div className="text-5xl mb-2">🎉</div>
-          <h1 className="title text-3xl font-black holo-text">Welcome back</h1>
+          <h1 className="title text-3xl font-black holo-text">{t("auth.loginTitle")}</h1>
         </div>
 
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-white/70">Email</span>
+            <span className="text-sm text-white/70">{t("auth.emailLabel")}</span>
             <input
               type="email"
               autoComplete="email"
@@ -69,7 +71,7 @@ function Login() {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-white/70">Password</span>
+            <span className="text-sm text-white/70">{t("auth.passwordLabel")}</span>
             <PasswordField
               value={password}
               onChange={setPassword}
@@ -80,26 +82,25 @@ function Login() {
           {err && <p className="text-rose-400 text-sm">{err}</p>}
 
           <button className="btn-primary mt-1" disabled={busy}>
-            {busy ? "Signing in…" : "Log in"}
+            {busy ? t("auth.loggingIn") : t("auth.loginCta")}
           </button>
         </form>
 
         <div className="flex items-center gap-3 my-1">
           <div className="h-px flex-1 bg-white/10" />
-          <span className="text-[10px] uppercase tracking-widest text-white/40">or</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/40">{t("auth.or")}</span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
         <GoogleButton redirectTo={redirectTo} />
 
         <div className="flex items-center justify-between text-sm">
-          <Link href="/auth/reset" className="text-white/60 hover:text-white">Forgot password?</Link>
-          <Link href="/auth/signup" className="text-flame hover:underline">Create account</Link>
+          <Link href="/auth/reset" className="text-white/60 hover:text-white">{t("auth.forgotPassword")}</Link>
+          <Link href="/auth/signup" className="text-flame hover:underline">{t("auth.signupCta")}</Link>
         </div>
 
         <div className="pt-3 mt-1 border-t border-white/10 text-center">
-          <p className="text-xs text-white/50 mb-2">Just joining a friend's party?</p>
           <Link href="/?guest=1" className="btn-ghost !py-2 !text-sm inline-flex">
-            📱 Join with a code
+            📱 {t("landing.joinCta").replace("📱 ", "")}
           </Link>
         </div>
         <Footer />

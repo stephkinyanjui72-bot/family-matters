@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getSupabase } from "@/lib/supabaseClient";
 import { isNativeApp } from "@/lib/platform";
 import { NATIVE_CALLBACK } from "@/lib/nativeAuth";
+import { useT } from "@/lib/i18n/context";
 
 // "Continue with Google" button.
 //
@@ -13,6 +14,7 @@ import { NATIVE_CALLBACK } from "@/lib/nativeAuth";
 // Android hands that off to the app, and the deep-link handler in
 // nativeAuth.ts reads the session tokens out of the URL.
 export function GoogleButton({ redirectTo = "/" }: { redirectTo?: string }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -70,7 +72,7 @@ export function GoogleButton({ redirectTo = "/" }: { redirectTo?: string }) {
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           <path fill="none" d="M0 0h48v48H0z"/>
         </svg>
-        <span>{busy ? "Redirecting…" : "Continue with Google"}</span>
+        <span>{busy ? t("common.loading") : t("auth.continueWithGoogle")}</span>
       </button>
       {err && <p className="text-rose-400 text-xs mt-1">{err}</p>}
     </>

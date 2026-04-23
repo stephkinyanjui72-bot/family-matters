@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { getSupabase } from "@/lib/supabaseClient";
+import { useT, RichText } from "@/lib/i18n/context";
 import { PasswordField } from "@/components/PasswordField";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Footer } from "@/components/Footer";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const t = useT();
   const { authUser, authLoading, signOut } = useStore();
 
   const [displayName, setDisplayName] = useState("");
@@ -39,7 +42,7 @@ export default function ProfilePage() {
     if (!authUser) return;
     const trimmed = displayName.trim();
     if (!trimmed || trimmed.length > 30) {
-      setNameMsg("Name must be 1–30 characters");
+      setNameMsg(t("profile.nameInvalid"));
       return;
     }
     setNameBusy(true);
@@ -59,7 +62,7 @@ export default function ProfilePage() {
       setNameMsg(error.message);
       return;
     }
-    setNameMsg("Saved ✓");
+    setNameMsg(t("common.saved"));
     setTimeout(() => setNameMsg(null), 2000);
   };
 
@@ -67,8 +70,8 @@ export default function ProfilePage() {
     e.preventDefault();
     setPwErr(null);
     setPwMsg(null);
-    if (newPassword.length < 8) return setPwErr("At least 8 characters");
-    if (newPassword !== confirmPassword) return setPwErr("Passwords don't match");
+    if (newPassword.length < 8) return setPwErr(t("profile.errPasswordShort"));
+    if (newPassword !== confirmPassword) return setPwErr(t("profile.errPasswordsMismatch"));
     setPwBusy(true);
     const sb = getSupabase();
     const { error } = await sb.auth.updateUser({ password: newPassword });
@@ -76,13 +79,14 @@ export default function ProfilePage() {
     if (error) return setPwErr(error.message);
     setNewPassword("");
     setConfirmPassword("");
-    setPwMsg("Password updated ✓");
+    setPwMsg(t("profile.passwordUpdated"));
     setTimeout(() => setPwMsg(null), 3000);
   };
 
   const deleteAccount = async () => {
-    if (deleteTyped.toLowerCase() !== "delete") {
-      setDeleteErr("Type 'delete' to confirm");
+    const expected = t("profile.deletePlaceholder").toLowerCase();
+    if (deleteTyped.trim().toLowerCase() !== expected) {
+      setDeleteErr(t("profile.deleteErrTypeDelete"));
       return;
     }
     setDeleteBusy(true);
@@ -91,16 +95,16 @@ export default function ProfilePage() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) {
       setDeleteBusy(false);
-      setDeleteErr("Session expired — log in again");
+      setDeleteErr(t("profile.deleteErrSession"));
       return;
     }
     const res = await fetch("/api/profile/delete", {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
-    }).then((r) => r.json()).catch(() => ({ ok: false, error: "Network error" }));
+    }).then((r) => r.json()).catch(() => ({ ok: false, error: t("common.networkError") }));
     if (!res?.ok) {
       setDeleteBusy(false);
-      setDeleteErr(res?.error || "Delete failed");
+      setDeleteErr(res?.error || t("profile.deleteErrGeneric"));
       return;
     }
     // Sign out locally and send them home.
@@ -111,32 +115,34 @@ export default function ProfilePage() {
   if (authLoading || !authUser) {
     return (
       <main className="min-h-screen flex items-center justify-center text-white/60">
-        Loading…
+        {t("common.loading")}
       </main>
     );
   }
 
+  const savedMsg = t("common.saved");
+
   return (
     <main className="min-h-screen max-w-md mx-auto p-6 flex flex-col gap-5">
       <header className="flex items-center justify-between pop-in">
-        <Link href="/" className="text-white/60 text-sm hover:text-white">← Back</Link>
-        <span className="chip border-white/15 text-white/60">Profile</span>
+        <Link href="/" className="text-white/60 text-sm hover:text-white">← {t("common.back")}</Link>
+        <span className="chip border-white/15 text-white/60">{t("profile.headerChip")}</span>
       </header>
 
       <div className="text-center pop-in">
         <div className="text-5xl mb-2">👤</div>
-        <h1 className="title text-3xl font-black holo-text">Your account</h1>
+        <h1 className="title text-3xl font-black holo-text">{t("profile.title")}</h1>
         <p className="text-white/60 text-xs mt-2 uppercase tracking-widest">
           {authUser.email}
-          {!authUser.emailVerified && <span className="text-amber-300"> · unverified</span>}
+          {!authUser.emailVerified && <span className="text-amber-300"> {t("profile.unverified")}</span>}
         </p>
       </div>
 
       {/* Display name */}
       <section className="card-glow flex flex-col gap-3">
         <div>
-          <h2 className="font-bold">Display name</h2>
-          <p className="text-white/50 text-xs">Shown to other players in your rooms.</p>
+          <h2 className="font-bold">{t("profile.displayName")}</h2>
+          <p className="text-white/50 text-xs">{t("profile.displayNameHint")}</p>
         </div>
         <form onSubmit={saveDisplayName} className="flex flex-col gap-2">
           <input
@@ -146,12 +152,12 @@ export default function ProfilePage() {
             maxLength={30}
           />
           {nameMsg && (
-            <p className={`text-sm ${nameMsg === "Saved ✓" ? "text-emerald-300" : "text-rose-400"}`}>
+            <p className={`text-sm ${nameMsg === savedMsg ? "text-emerald-300" : "text-rose-400"}`}>
               {nameMsg}
             </p>
           )}
           <button className="btn-primary" disabled={nameBusy}>
-            {nameBusy ? "Saving…" : "Save name"}
+            {nameBusy ? t("common.saving") : t("profile.saveName")}
           </button>
         </form>
       </section>
@@ -159,36 +165,45 @@ export default function ProfilePage() {
       {/* Change password */}
       <section className="card-glow flex flex-col gap-3">
         <div>
-          <h2 className="font-bold">Change password</h2>
-          <p className="text-white/50 text-xs">At least 8 characters.</p>
+          <h2 className="font-bold">{t("profile.changePassword")}</h2>
+          <p className="text-white/50 text-xs">{t("profile.passwordHint")}</p>
         </div>
         <form onSubmit={changePassword} className="flex flex-col gap-2">
           <PasswordField
             value={newPassword}
             onChange={setNewPassword}
-            placeholder="New password"
+            placeholder={t("profile.newPasswordPlaceholder")}
             autoComplete="new-password"
           />
           <PasswordField
             value={confirmPassword}
             onChange={setConfirmPassword}
-            placeholder="Confirm new password"
+            placeholder={t("profile.confirmPasswordPlaceholder")}
             autoComplete="new-password"
           />
           {pwErr && <p className="text-rose-400 text-sm">{pwErr}</p>}
           {pwMsg && <p className="text-emerald-300 text-sm">{pwMsg}</p>}
           <button className="btn-primary" disabled={pwBusy || !newPassword || !confirmPassword}>
-            {pwBusy ? "Updating…" : "Update password"}
+            {pwBusy ? t("profile.updating") : t("profile.updatePassword")}
           </button>
         </form>
+      </section>
+
+      {/* Language */}
+      <section className="card-glow flex flex-col gap-3">
+        <div>
+          <h2 className="font-bold">{t("profile.language")}</h2>
+          <p className="text-white/50 text-xs">{t("profile.languageHint")}</p>
+        </div>
+        <LanguageSwitcher />
       </section>
 
       {/* Age tier chip + sign out */}
       <section className="card flex items-center justify-between">
         <div>
-          <h2 className="font-bold">Age tier</h2>
+          <h2 className="font-bold">{t("profile.ageTier")}</h2>
           <p className="text-white/50 text-xs mt-0.5">
-            {authUser.ageTier === "under-18" ? "Mild tier only" : "All tiers unlocked"}
+            {authUser.ageTier === "under-18" ? t("profile.ageTierUnder18") : t("profile.ageTierAll")}
           </p>
         </div>
         <span className={`chip ${authUser.ageTier === "under-18" ? "border-rose-500/40 text-rose-300" : "border-emerald-400/40 text-emerald-300"}`}>
@@ -197,33 +212,32 @@ export default function ProfilePage() {
       </section>
 
       <button className="btn-ghost" onClick={() => signOut().then(() => router.replace("/"))}>
-        Sign out
+        {t("profile.signOut")}
       </button>
 
       {/* Delete account */}
       <section className="card border-rose-500/30">
-        <h2 className="font-bold text-rose-300">Danger zone</h2>
+        <h2 className="font-bold text-rose-300">{t("profile.dangerZone")}</h2>
         <p className="text-white/60 text-xs mt-1">
-          Deletes your account, profile, and any rooms you're hosting.
-          Rooms you've joined as a guest stay intact.
+          {t("profile.deleteDesc")}
         </p>
         {!deleteOpen ? (
           <button
             className="mt-3 w-full rounded-xl py-2 text-sm font-bold border border-rose-500/40 text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 transition"
             onClick={() => setDeleteOpen(true)}
           >
-            Delete my account
+            {t("profile.deleteAccount")}
           </button>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
             <p className="text-sm text-white/80">
-              Type <b className="text-rose-300">delete</b> to confirm. This is permanent.
+              <RichText text={t("profile.deleteConfirm")} />
             </p>
             <input
               className="bg-white/5 border border-rose-500/30 rounded-xl px-3 py-2 outline-none focus:ring-2 ring-rose-500/50"
               value={deleteTyped}
               onChange={(e) => setDeleteTyped(e.target.value)}
-              placeholder="delete"
+              placeholder={t("profile.deletePlaceholder")}
               autoComplete="off"
             />
             {deleteErr && <p className="text-rose-400 text-sm">{deleteErr}</p>}
@@ -233,14 +247,14 @@ export default function ProfilePage() {
                 onClick={() => { setDeleteOpen(false); setDeleteTyped(""); setDeleteErr(null); }}
                 disabled={deleteBusy}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 className="rounded-xl py-2 text-sm font-bold border border-rose-500/40 text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50"
                 onClick={deleteAccount}
                 disabled={deleteBusy}
               >
-                {deleteBusy ? "Deleting…" : "Permanently delete"}
+                {deleteBusy ? t("common.deleting") : t("profile.deletePermanent")}
               </button>
             </div>
           </div>

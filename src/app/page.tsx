@@ -3,19 +3,21 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { clearStoredSession, peekSession, useStore } from "@/lib/store";
 import { isNativeApp } from "@/lib/platform";
+import { useT, RichText } from "@/lib/i18n/context";
 import { Footer } from "@/components/Footer";
 import type { Intensity } from "@/lib/types";
 
-const INTENSITIES: { id: Intensity; label: string; hint: string; tone: string }[] = [
-  { id: "mild", label: "Mild", hint: "Warm-up vibes. Safe for any crowd.", tone: "from-emerald-400/70 to-teal-400/70" },
-  { id: "spicy", label: "Spicy", hint: "Flirty, bold, suggestive.", tone: "from-flame to-ember" },
-  { id: "extreme", label: "Extreme", hint: "No limits. Adults only.", tone: "from-fuchsia-500 to-rose-500" },
-  { id: "chaos", label: "Chaos", hint: "Unfiltered. Chaotic. Intimate.", tone: "from-rose-600 via-fuchsia-700 to-purple-700" },
-];
+const INTENSITY_IDS: Intensity[] = ["mild", "spicy", "extreme", "chaos"];
+const INTENSITY_TONES: Record<Intensity, string> = {
+  mild: "from-emerald-400/70 to-teal-400/70",
+  spicy: "from-flame to-ember",
+  extreme: "from-fuchsia-500 to-rose-500",
+  chaos: "from-rose-600 via-fuchsia-700 to-purple-700",
+};
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<main className="min-h-screen flex items-center justify-center text-white/50">Loading…</main>}>
+    <Suspense fallback={<main className="min-h-screen flex items-center justify-center text-white/50">…</main>}>
       <Home />
     </Suspense>
   );
@@ -25,6 +27,7 @@ function Home() {
   const router = useRouter();
   const params = useSearchParams();
   const prefilled = params.get("code") || "";
+  const t = useT();
   const { createRoom, joinRoom, room, authUser, authLoading, signOut } = useStore();
 
   const guest = params.get("guest") === "1";
@@ -82,8 +85,8 @@ function Home() {
       router.push("/auth/login?next=/");
       return;
     }
-    if (!inApp) return setError("Install the Android app to host a party");
-    if (!name.trim()) return setError("Enter your name");
+    if (!inApp) return setError(t("host.errAndroidOnly"));
+    if (!name.trim()) return setError(t("host.errEnterName"));
     // Adult-tier rooms require an explicit host affirmation first.
     if ((intensity === "extreme" || intensity === "chaos") && !showLiabilityModal) {
       setShowLiabilityModal(true);
@@ -94,7 +97,7 @@ function Home() {
     const res = await createRoom(name.trim(), intensity);
     setBusy(false);
     setShowLiabilityModal(false);
-    if (!res.ok) return setError(res.error || "Could not host");
+    if (!res.ok) return setError(res.error || t("host.errCouldNotHost"));
     if (res.code) router.push(`/room/${res.code}`);
   };
 
@@ -118,16 +121,16 @@ function Home() {
   })();
 
   const onJoin = async () => {
-    if (!name.trim()) return setError("Enter your name");
-    if (!code.trim()) return setError("Enter a room code");
+    if (!name.trim()) return setError(t("host.errEnterName"));
+    if (!code.trim()) return setError(t("join.errEnterCode"));
     // The 18+ checkbox is only required for guests (no authed user). For
     // authed users the server knows their age and gates automatically.
-    if (!authUser && !joinerAdult) return setError("You must confirm you're 18 or older");
+    if (!authUser && !joinerAdult) return setError(t("join.errMustConfirm"));
     setBusy(true);
     setError(null);
     const res = await joinRoom(code.trim().toUpperCase(), name.trim());
     setBusy(false);
-    if (!res.ok) return setError(res.error || "Could not join");
+    if (!res.ok) return setError(res.error || t("join.errCouldNotJoin"));
     router.push(`/room/${code.trim().toUpperCase()}`);
   };
 
@@ -143,19 +146,19 @@ function Home() {
             <div className="absolute right-0 mt-2 card !p-3 w-56 flex flex-col gap-2 text-sm">
               <div className="text-white/50 text-xs truncate">{authUser.email}</div>
               <div className="text-[10px] uppercase tracking-widest text-flame">
-                {authUser.ageTier === "under-18" ? "Teen mode" : "All tiers"}
+                {authUser.ageTier === "under-18" ? t("landing.teenModeChip") : t("landing.allTiersChip")}
               </div>
               {!authUser.emailVerified && (
                 <a href={`/auth/verify-email?email=${encodeURIComponent(authUser.email || "")}`} className="text-[11px] text-amber-300 hover:underline">
-                  ⚠ Verify your email
+                  {t("landing.verifyEmailBanner")}
                 </a>
               )}
-              <a href="/profile" className="btn-ghost !py-1.5 !text-xs text-center">👤 Profile</a>
-              <button className="btn-ghost !py-1.5 !text-xs" onClick={() => signOut()}>Sign out</button>
+              <a href="/profile" className="btn-ghost !py-1.5 !text-xs text-center">👤 {t("landing.profile")}</a>
+              <button className="btn-ghost !py-1.5 !text-xs" onClick={() => signOut()}>{t("landing.signOut")}</button>
             </div>
           </details>
         ) : (
-          <a href="/auth/login" className="chip border-flame/40 text-flame bg-flame/10">Log in</a>
+          <a href="/auth/login" className="chip border-flame/40 text-flame bg-flame/10">{t("landing.login")}</a>
         )}
       </div>
 
@@ -171,9 +174,7 @@ function Home() {
           PARTY<br/>MATE
         </h1>
         <p className="text-white/60 mt-3 uppercase tracking-[0.35em] text-[10px] font-bold">
-          {authUser?.ageTier === "under-18"
-            ? "26 party games · teen mode"
-            : "31 games · one wild night · 18+"}
+          {authUser?.ageTier === "under-18" ? t("landing.taglineTeen") : t("landing.taglineAdult")}
         </p>
       </div>
 
@@ -190,18 +191,18 @@ function Home() {
                 setMode("host");
               }}
             >
-              🎉 Host a Party
+              {t("landing.hostCta")}
             </button>
           ) : (
             <a
               href="/download"
               className="btn-primary text-xl h-16 text-center flex flex-col justify-center leading-tight"
             >
-              <span>📲 Host from the app</span>
-              <span className="text-[11px] font-normal opacity-80 uppercase tracking-widest">get the Android app</span>
+              <span>{t("landing.hostFromApp")}</span>
+              <span className="text-[11px] font-normal opacity-80 uppercase tracking-widest">{t("landing.hostFromAppHint")}</span>
             </a>
           )}
-          <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>📱 Join with Code</button>
+          <button className="btn-ghost text-lg h-14" onClick={() => setMode("join")}>{t("landing.joinCta")}</button>
           {stuckCode && (
             <button
               className="text-center text-rose-300/80 text-xs mt-1 hover:text-rose-200 underline underline-offset-4"
@@ -210,16 +211,16 @@ function Home() {
                 setStuckCode(null);
               }}
             >
-              ✕ Leave previous party ({stuckCode})
+              {t("landing.leavePrevious", { code: stuckCode })}
             </button>
           )}
           {!inApp && (
             <a href="/download" className="text-center text-white/50 text-sm mt-2 hover:text-white underline underline-offset-4">
-              📲 Get the Android app
+              {t("landing.downloadAndroid")}
             </a>
           )}
           <p className="text-center text-white/40 text-xs mt-4 uppercase tracking-widest">
-            host in the app · others scan the QR · works over the internet
+            {t("landing.helperLine")}
           </p>
           <Footer />
         </div>
@@ -227,52 +228,50 @@ function Home() {
 
       {mode === "host" && (
         <div className="card-glow w-full max-w-sm flex flex-col gap-4 pop-in">
-          <h2 className="title text-2xl font-black">Host a Party</h2>
+          <h2 className="title text-2xl font-black">{t("host.title")}</h2>
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-white/60">Your name</span>
+            <span className="text-sm text-white/60">{t("host.nameLabel")}</span>
             <input
               className="bg-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50"
               value={name}
               onChange={(e) => saveName(e.target.value)}
               maxLength={20}
-              placeholder="e.g. Alex"
+              placeholder={t("host.namePlaceholder")}
             />
           </label>
           {authUser?.ageTier === "under-18" ? (
             // Teen accounts: no intensity choice — always Mild, not even mentioned.
             <p className="text-xs text-white/50 uppercase tracking-widest text-center">
-              🌿 teen mode · party-safe content
+              {t("host.teenOnlyLine")}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              <span className="text-sm text-white/60">Intensity</span>
+              <span className="text-sm text-white/60">{t("host.intensityLabel")}</span>
               <div className="grid grid-cols-2 gap-2">
-                {INTENSITIES.filter((t) => availableTiers.includes(t.id)).map((t) => (
+                {INTENSITY_IDS.filter((id) => availableTiers.includes(id)).map((id) => (
                   <button
-                    key={t.id}
-                    onClick={() => setIntensity(t.id)}
+                    key={id}
+                    onClick={() => setIntensity(id)}
                     className={`rounded-xl py-3 text-sm font-semibold border transition ${
-                      intensity === t.id
-                        ? `bg-gradient-to-br ${t.tone} border-white/30 text-white`
+                      intensity === id
+                        ? `bg-gradient-to-br ${INTENSITY_TONES[id]} border-white/30 text-white`
                         : "bg-white/5 border-white/10 text-white/70"
                     }`}
                   >
-                    {t.label}
+                    {t(`intensity.${id}`)}
                   </button>
                 ))}
               </div>
               <p className="text-xs text-white/50">
-                {availableTiers.includes(intensity)
-                  ? INTENSITIES.find((t) => t.id === intensity)?.hint
-                  : "—"}
+                {availableTiers.includes(intensity) ? t(`intensity.${intensity}Hint`) : "—"}
               </p>
             </div>
           )}
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
-            <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>
+            <button className="btn-ghost flex-1" onClick={() => setMode("start")}>{t("common.back")}</button>
             <button className="btn-primary flex-1" onClick={onHost} disabled={busy}>
-              {busy ? "Creating…" : "Start"}
+              {busy ? t("host.creating") : t("host.startBtn")}
             </button>
           </div>
         </div>
@@ -280,32 +279,32 @@ function Home() {
 
       {mode === "join" && (
         <div className="card-glow w-full max-w-sm flex flex-col gap-4 pop-in">
-          <h2 className="title text-2xl font-black">Join a Party</h2>
+          <h2 className="title text-2xl font-black">{t("join.title")}</h2>
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-white/60">Your name</span>
+            <span className="text-sm text-white/60">{t("host.nameLabel")}</span>
             <input
               className="bg-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50"
               value={name}
               onChange={(e) => saveName(e.target.value)}
               maxLength={20}
-              placeholder="e.g. Alex"
+              placeholder={t("host.namePlaceholder")}
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-white/60">Room code</span>
+            <span className="text-sm text-white/60">{t("join.codeLabel")}</span>
             <input
               className="bg-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 tracking-[0.4em] text-center text-2xl uppercase"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
               maxLength={4}
-              placeholder="ABCD"
+              placeholder={t("join.codePlaceholder")}
             />
           </label>
           {authUser ? (
             // Authed users: age is on file, server gates automatically.
             authUser.ageTier === "under-18" ? (
               <p className="text-[11px] text-white/50">
-                🌿 Teen accounts can only join party-safe rooms.
+                {t("join.teenHint")}
               </p>
             ) : null
           ) : (
@@ -316,20 +315,18 @@ function Home() {
                 onChange={(e) => setJoinerAdult(e.target.checked)}
                 className="mt-0.5 accent-flame w-4 h-4 shrink-0"
               />
-              <span>
-                I confirm I am <b>18 or older</b> and understand this room may contain adult content.
-              </span>
+              <span><RichText text={t("join.adultConfirm")} /></span>
             </label>
           )}
           {error && <p className="text-rose-400 text-sm">{error}</p>}
           <div className="flex gap-2">
-            <button className="btn-ghost flex-1" onClick={() => setMode("start")}>Back</button>
+            <button className="btn-ghost flex-1" onClick={() => setMode("start")}>{t("common.back")}</button>
             <button
               className="btn-primary flex-1"
               onClick={onJoin}
               disabled={busy || (!authUser && !joinerAdult)}
             >
-              {busy ? "…" : "Join"}
+              {busy ? t("join.joining") : t("join.joinBtn")}
             </button>
           </div>
         </div>
@@ -352,30 +349,29 @@ function Home() {
                     }}
                   />
                 </div>
-                <p className="text-white/85 text-sm font-bold">Creating your party…</p>
-                <p className="text-white/50 text-xs capitalize">{intensity} tier · shuffling the bag</p>
+                <p className="text-white/85 text-sm font-bold">{t("liability.creatingTitle")}</p>
+                <p className="text-white/50 text-xs">{t("liability.shuffling", { tier: t(`intensity.${intensity}`) })}</p>
               </div>
             ) : (
               <>
                 <div className="text-center">
                   <div className="text-4xl mb-2">⚠️</div>
-                  <h3 className="title text-2xl font-black">Host responsibility</h3>
+                  <h3 className="title text-2xl font-black">{t("liability.title")}</h3>
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed">
-                  You're about to host a <b className="text-flame capitalize">{intensity}</b> tier session.
-                  By starting this party you confirm that:
+                  <RichText text={t("liability.intro", { tier: t(`intensity.${intensity}`) })} />
                 </p>
                 <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
-                  <li>Every player in the room is <b>18 or older</b>.</li>
-                  <li>All players have consented to adult content in this session.</li>
-                  <li>You take responsibility for who you invite and what happens during play.</li>
+                  <li><RichText text={t("liability.bullet1")} /></li>
+                  <li><RichText text={t("liability.bullet2")} /></li>
+                  <li><RichText text={t("liability.bullet3")} /></li>
                 </ul>
                 <div className="grid grid-cols-2 gap-2">
                   <button className="btn-ghost" onClick={() => setShowLiabilityModal(false)}>
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                   <button className="btn-primary" onClick={onHost}>
-                    Agree &amp; Start
+                    {t("liability.agreeStart")}
                   </button>
                 </div>
               </>

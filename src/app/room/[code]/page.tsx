@@ -5,12 +5,12 @@ import QRCode from "qrcode";
 import { clearStoredSession, useStore } from "@/lib/store";
 import { GAMES, CATEGORIES, type Category } from "@/lib/games";
 import type { Intensity } from "@/lib/types";
+import { useT, RichText } from "@/lib/i18n/context";
 import { GameScreen } from "@/components/GameScreen";
 import { ExitSessionButton } from "@/components/ExitSessionButton";
 
-const TIERS: {
+type TierStyle = {
   id: Intensity;
-  label: string;
   emoji: string;
   // Gradient used when selected (Tailwind class string)
   tone: string;
@@ -18,10 +18,11 @@ const TIERS: {
   hintBg: string;
   hintBorder: string;
   hintText: string;
-}[] = [
+};
+
+const TIERS: TierStyle[] = [
   {
     id: "mild",
-    label: "Mild",
     emoji: "🌿",
     tone: "from-emerald-500 via-teal-500 to-cyan-500",
     hintBg: "bg-emerald-500/10",
@@ -30,7 +31,6 @@ const TIERS: {
   },
   {
     id: "spicy",
-    label: "Spicy",
     emoji: "🌶️",
     tone: "from-flame via-ember to-yellow-400",
     hintBg: "bg-flame/10",
@@ -39,7 +39,6 @@ const TIERS: {
   },
   {
     id: "extreme",
-    label: "Extreme",
     emoji: "🔥",
     tone: "from-fuchsia-600 via-pink-600 to-rose-500",
     hintBg: "bg-fuchsia-500/10",
@@ -48,7 +47,6 @@ const TIERS: {
   },
   {
     id: "chaos",
-    label: "Chaos",
     emoji: "💀",
     tone: "from-purple-900 via-rose-800 to-red-900",
     hintBg: "bg-rose-900/20",
@@ -60,6 +58,7 @@ const TIERS: {
 export default function RoomPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
+  const t = useT();
   const { room, me, isHost, connected, setIntensity, selectGame, authUser, kickPlayer } = useStore();
   const isTeen = authUser?.ageTier === "under-18";
   // For teen accounts, the app hides adult tiers AND adult-themed games
@@ -100,10 +99,10 @@ export default function RoomPage() {
   useEffect(() => {
     if (!room && typeof window !== "undefined") {
       // Came here without joining first — bounce home with prefill.
-      const t = setTimeout(() => {
+      const id = setTimeout(() => {
         if (!room) router.replace(`/?code=${params.code}`);
       }, 1500);
-      return () => clearTimeout(t);
+      return () => clearTimeout(id);
     }
   }, [room, router, params.code]);
 
@@ -127,12 +126,13 @@ export default function RoomPage() {
   if (!room) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6">
-        <div className="text-white/60">Connecting…</div>
+        <div className="text-white/60">{t("room.connecting")}</div>
       </main>
     );
   }
 
-  const tier = TIERS.find((t) => t.id === room.intensity)!;
+  const tier = TIERS.find((x) => x.id === room.intensity)!;
+  const tierLabel = t(`intensity.${tier.id}`);
 
   // Adult-tier consent gate — blocks the whole room view until accepted.
   const needsConsent = (room.intensity === "extreme" || room.intensity === "chaos") && !intensityAck;
@@ -142,20 +142,19 @@ export default function RoomPage() {
         <div className="max-w-sm w-full card-glow flex flex-col gap-4 pop-in border-rose-500/40">
           <div className="text-center">
             <div className="text-4xl mb-2">{tier.emoji}</div>
-            <h2 className="title text-2xl font-black">Adult tier room</h2>
+            <h2 className="title text-2xl font-black">{t("room.adultTierTitle")}</h2>
           </div>
           <p className="text-sm text-white/80 leading-relaxed">
-            This party is set to <b className={`capitalize ${tier.hintText}`}>{tier.label}</b>.
-            Before continuing, please confirm:
+            <RichText text={t("room.adultTierDesc", { tier: tierLabel })} />
           </p>
           <ul className="text-sm text-white/80 flex flex-col gap-2 list-disc pl-5">
-            <li>You are <b>18 or older</b>.</li>
-            <li>You consent to explicit adult content during this session.</li>
-            <li>You can leave or swap to a milder tier at any time.</li>
+            <li><RichText text={t("room.consentBullet1")} /></li>
+            <li><RichText text={t("room.consentBullet2")} /></li>
+            <li><RichText text={t("room.consentBullet3")} /></li>
           </ul>
           <div className="grid grid-cols-2 gap-2">
-            <button className="btn-ghost" onClick={declineIntensity}>Leave</button>
-            <button className="btn-primary" onClick={acceptIntensity}>Agree & Stay</button>
+            <button className="btn-ghost" onClick={declineIntensity}>{t("room.leave")}</button>
+            <button className="btn-primary" onClick={acceptIntensity}>{t("room.agreeStay")}</button>
           </div>
         </div>
       </main>
@@ -174,18 +173,18 @@ export default function RoomPage() {
       <header className="flex items-center justify-between pop-in">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">Room code</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">{t("room.roomCodeLabel")}</div>
             <span className={`inline-flex items-center gap-1.5 chip text-[9px] ${connected ? "border-emerald-400/40 text-emerald-300" : "border-white/20 text-white/60"}`}>
               {connected ? (
                 <>
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  live
+                  {t("room.live")}
                 </>
               ) : (
                 <span
                   className="inline-block w-3 h-3 rounded-full border-[1.5px] border-white/15 border-t-flame border-r-ember animate-spin"
                   style={{ animationDuration: "0.9s" }}
-                  aria-label="Reconnecting"
+                  aria-label={t("room.reconnecting")}
                 />
               )}
             </span>
@@ -195,12 +194,12 @@ export default function RoomPage() {
       </header>
 
       <section className="card-glow flex flex-col items-center gap-3">
-        <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Scan to join · same WiFi</div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">{t("room.scanToJoin")}</div>
         {qrDataUrl ? (
           <div className="qr-ring">
             <img
               src={qrDataUrl}
-              alt="Join QR code"
+              alt={t("room.joinQrAlt")}
               className="relative block w-56 h-56 rounded-[16px] bg-black p-3"
             />
           </div>
@@ -215,7 +214,7 @@ export default function RoomPage() {
               try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
             }}
           >
-            {copied ? "✓ copied" : "📋 copy link"}
+            {copied ? t("room.copied") : t("room.copyLink")}
           </button>
           {/* Web Share API: opens the native share sheet on mobile (WhatsApp,
               SMS, AirDrop, …). Falls back silently if unsupported (desktop). */}
@@ -227,7 +226,7 @@ export default function RoomPage() {
                 try {
                   await nav.share({
                     title: "Party Mate",
-                    text: `Join my Party Mate session — code ${room.code}`,
+                    text: t("room.shareText", { code: room.code }),
                     url: joinUrl,
                   });
                 } catch { /* user cancelled */ }
@@ -240,7 +239,7 @@ export default function RoomPage() {
               }
             }}
           >
-            📤 share
+            {t("room.share")}
           </button>
         </div>
       </section>
@@ -248,8 +247,8 @@ export default function RoomPage() {
       <div className="section-frame">
         <section className="card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold">Players <span className="text-white/50 font-normal">({room.players.length})</span></h3>
-            {me && <span className="text-xs text-white/50">You: {me.name}</span>}
+            <h3 className="font-bold">{t("room.players")} <span className="text-white/50 font-normal">({room.players.length})</span></h3>
+            {me && <span className="text-xs text-white/50">{t("room.youPrefix", { name: me.name })}</span>}
           </div>
           <ul className="flex flex-wrap gap-2">
             {room.players.map((p) => (
@@ -264,15 +263,15 @@ export default function RoomPage() {
                 }`}
               >
                 <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.online ? (p.isHost ? "bg-flame" : "bg-emerald-400") : "bg-white/30"}`} />
-                <span>{p.name}{p.isHost && " · host"}{!p.online && " · offline"}</span>
+                <span>{p.name}{p.isHost && ` · ${t("room.hostSuffix")}`}{!p.online && ` · ${t("room.offlineSuffix")}`}</span>
                 {/* Host can remove a disruptive non-host player. Hidden for
                     non-hosts and for the host's own chip. */}
                 {isHost && !p.isHost && (
                   <button
-                    aria-label={`Kick ${p.name}`}
+                    aria-label={t("room.kickAria", { name: p.name })}
                     onClick={() => {
                       if (typeof window === "undefined") return;
-                      const ok = window.confirm(`Remove ${p.name} from the party?`);
+                      const ok = window.confirm(t("room.kickConfirm", { name: p.name }));
                       if (ok) kickPlayer(p.id);
                     }}
                     className="ml-1 text-rose-400/80 hover:text-rose-300 text-[14px] leading-none"
@@ -290,31 +289,31 @@ export default function RoomPage() {
         <div className="section-frame">
           <section className="card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold">Intensity</h3>
-              <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tier.label}</span>
+              <h3 className="font-bold">{t("room.intensity")}</h3>
+              <span className={`chip border-white/30 bg-gradient-to-r ${tier.tone} text-white`}>{tierLabel}</span>
             </div>
             {isHost ? (
               <div className="grid grid-cols-2 gap-2">
-                {TIERS.map((t) => {
-                  const active = room.intensity === t.id;
+                {TIERS.map((x) => {
+                  const active = room.intensity === x.id;
                   return (
                     <button
-                      key={t.id}
-                      onClick={() => setIntensity(t.id)}
+                      key={x.id}
+                      onClick={() => setIntensity(x.id)}
                       className={`rounded-xl py-2.5 px-3 text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${
                         active
-                          ? `bg-gradient-to-br ${t.tone} border-white/40 text-white shadow-lg shadow-black/40`
-                          : `${t.hintBg} ${t.hintBorder} ${t.hintText} hover:brightness-125`
+                          ? `bg-gradient-to-br ${x.tone} border-white/40 text-white shadow-lg shadow-black/40`
+                          : `${x.hintBg} ${x.hintBorder} ${x.hintText} hover:brightness-125`
                       }`}
                     >
-                      <span className="text-base">{t.emoji}</span>
-                      <span>{t.label}</span>
+                      <span className="text-base">{x.emoji}</span>
+                      <span>{t(`intensity.${x.id}`)}</span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-white/50 text-sm">Only the host changes the intensity.</p>
+              <p className="text-white/50 text-sm">{t("room.hostOnlyIntensity")}</p>
             )}
           </section>
         </div>
@@ -322,8 +321,8 @@ export default function RoomPage() {
 
       <section>
         <div className="flex items-baseline justify-between mb-3">
-          <h3 className="title text-xl font-black uppercase tracking-wider">Pick a Game</h3>
-          <span className="text-[10px] uppercase tracking-widest text-white/40">{visibleGames.length} games</span>
+          <h3 className="title text-xl font-black uppercase tracking-wider">{t("room.pickGame")}</h3>
+          <span className="text-[10px] uppercase tracking-widest text-white/40">{t("room.gamesCount", { n: visibleGames.length })}</span>
         </div>
 
         {/* Category filter row — horizontal scroll on narrow screens */}
@@ -336,11 +335,12 @@ export default function RoomPage() {
                 : "bg-white/5 text-white/75"
             }`}
           >
-            All
+            {t("room.all")}
           </button>
           {CATEGORIES.map((cat) => {
             const active = filter === cat.id;
             const count = visibleGames.filter((g) => g.category === cat.id).length;
+            const catKey = `room.category${cat.id.charAt(0).toUpperCase()}${cat.id.slice(1)}`;
             return (
               <button
                 key={cat.id}
@@ -352,7 +352,7 @@ export default function RoomPage() {
                 }`}
               >
                 <span>{cat.emoji}</span>
-                <span>{cat.label}</span>
+                <span>{t(catKey)}</span>
                 <span className={`ml-1 text-[10px] ${active ? "text-white/80" : "text-white/45"}`}>{count}</span>
               </button>
             );
@@ -404,7 +404,7 @@ export default function RoomPage() {
 
                 <div className="flex items-start justify-between relative">
                   <div className="text-[9px] uppercase tracking-widest font-bold" style={{ color: c.text }}>
-                    {cat.emoji} {cat.label}
+                    {cat.emoji} {t(`room.category${cat.id.charAt(0).toUpperCase()}${cat.id.slice(1)}`)}
                   </div>
                 </div>
 
@@ -420,11 +420,11 @@ export default function RoomPage() {
 
                 <div className="mt-3 flex items-center justify-between relative">
                   <span className="chip border-white/15 text-white/65 text-[10px] !py-0.5">
-                    {g.minPlayers}+ players
+                    {t("room.minPlayers", { n: g.minPlayers })}
                   </span>
                   {!enabled && room.players.length < g.minPlayers && (
                     <span className="text-[9px] text-rose-400 uppercase tracking-wider font-bold">
-                      🔒 needs {g.minPlayers - room.players.length} more
+                      {t("room.needsMore", { n: g.minPlayers - room.players.length })}
                     </span>
                   )}
                 </div>
@@ -433,7 +433,7 @@ export default function RoomPage() {
           })}
         </div>
         {!isHost && (
-          <p className="text-center text-white/40 text-xs mt-4">Waiting for host to pick a game…</p>
+          <p className="text-center text-white/40 text-xs mt-4">{t("room.waitingHost")}</p>
         )}
       </section>
       <ExitSessionButton />

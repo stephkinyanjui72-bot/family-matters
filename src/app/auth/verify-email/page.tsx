@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
+import { useT } from "@/lib/i18n/context";
 
 export default function VerifyEmailPage() {
   return (
@@ -15,6 +16,7 @@ export default function VerifyEmailPage() {
 function VerifyEmail() {
   const params = useSearchParams();
   const email = params.get("email") || "";
+  const t = useT();
   const [resending, setResending] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -22,8 +24,8 @@ function VerifyEmail() {
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(id);
   }, [cooldown]);
 
   const resend = async () => {
@@ -39,7 +41,7 @@ function VerifyEmail() {
     });
     setResending(false);
     if (error) return setErr(error.message);
-    setMsg("Verification email sent. Check your inbox.");
+    setMsg(t("auth.resetSent"));
     setCooldown(60);
   };
 
@@ -47,14 +49,9 @@ function VerifyEmail() {
     <main className="min-h-screen flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm card-glow flex flex-col gap-4 pop-in text-center">
         <div className="text-6xl">📬</div>
-        <h1 className="title text-2xl font-black holo-text">Check your email</h1>
+        <h1 className="title text-2xl font-black holo-text">{t("auth.verifyTitle")}</h1>
         <p className="text-white/70 text-sm">
-          {email
-            ? <>We sent a verification link to <b className="text-white">{email}</b>. Tap it to confirm your account.</>
-            : <>We sent a verification link to your email. Tap it to confirm your account.</>}
-        </p>
-        <p className="text-white/50 text-xs">
-          You can already host a party — verification just secures your account long-term.
+          {t("auth.verifyBody", { email: email || "—" })}
         </p>
 
         {msg && <p className="text-emerald-300 text-sm">{msg}</p>}
@@ -65,12 +62,12 @@ function VerifyEmail() {
           onClick={resend}
           disabled={resending || !email || cooldown > 0}
         >
-          {cooldown > 0 ? `Resend in ${cooldown}s` : resending ? "Sending…" : "Resend email"}
+          {cooldown > 0 ? `${cooldown}s` : resending ? t("common.loading") : t("auth.resendEmail")}
         </button>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <Link href="/auth/login" className="btn-ghost !py-2 !text-sm">Log in</Link>
-          <Link href="/" className="btn-ghost !py-2 !text-sm">Home</Link>
+          <Link href="/auth/login" className="btn-ghost !py-2 !text-sm">{t("auth.loginCta")}</Link>
+          <Link href="/" className="btn-ghost !py-2 !text-sm">{t("footer.home")}</Link>
         </div>
       </div>
     </main>
