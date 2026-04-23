@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabaseClient";
 import { useT } from "@/lib/i18n/context";
 import { PasswordField } from "@/components/PasswordField";
 import { GoogleButton } from "@/components/GoogleButton";
+import { BirthdatePicker } from "@/components/BirthdatePicker";
 import { Footer } from "@/components/Footer";
 
 // Minimum age to create an account. Under-18 accounts get a kid-safe
@@ -103,16 +104,10 @@ export default function SignupPage() {
               autoComplete="new-password"
             />
           </label>
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-sm text-white/70">{t("auth.birthdateLabel")}</span>
-            <input
-              type="date"
-              className="bg-white/5 border border-white/15 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-flame/50 focus:border-flame/40"
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
-            />
-          </label>
+            <BirthdatePicker value={birthdate} onChange={setBirthdate} minAge={MIN_AGE} maxAge={100} />
+          </div>
 
           <label className="flex items-start gap-2 text-xs text-white/70 cursor-pointer mt-1">
             <input

@@ -8,6 +8,7 @@ import type { Intensity } from "@/lib/types";
 import { useT, RichText } from "@/lib/i18n/context";
 import { GameScreen } from "@/components/GameScreen";
 import { ExitSessionButton } from "@/components/ExitSessionButton";
+import { SocialShareRow } from "@/components/SocialShareRow";
 
 type TierStyle = {
   id: Intensity;
@@ -242,6 +243,7 @@ export default function RoomPage() {
             {t("room.share")}
           </button>
         </div>
+        <SocialShareRow url={joinUrl} text={t("room.shareText", { code: room.code })} />
       </section>
 
       <div className="section-frame">

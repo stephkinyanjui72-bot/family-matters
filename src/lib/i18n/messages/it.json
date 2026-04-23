@@ -193,5 +193,8 @@
     "privacy": "Privacy",
     "home": "Home",
     "legal": "Legale"
+  },
+  "share": {
+    "copyToast": "Copiato — incollalo in {app} per inviare"
   }
 }

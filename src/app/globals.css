@@ -197,6 +197,12 @@ body::after {
     @apply px-3 py-1 rounded-full text-xs font-semibold border;
     letter-spacing: 0.04em;
   }
+  .share-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+  .share-pill:hover { filter: brightness(1.1); }
+  .share-pill:active { transform: scale(0.97); }
   .title {
     font-family: var(--font-display), "Segoe UI", ui-sans-serif, system-ui, sans-serif;
     font-weight: 800;
