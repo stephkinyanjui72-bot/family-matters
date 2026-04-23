@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useStore } from "@/lib/store";
+import { useStore, setPreviewAsTeen, peekPreviewAsTeen } from "@/lib/store";
 import { getSupabase } from "@/lib/supabaseClient";
 import { useT, RichText } from "@/lib/i18n/context";
 import { PasswordField } from "@/components/PasswordField";
@@ -28,6 +28,9 @@ export default function ProfilePage() {
   const [deleteTyped, setDeleteTyped] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
+
+  const [previewing, setPreviewing] = useState(false);
+  useEffect(() => { setPreviewing(peekPreviewAsTeen()); }, []);
 
   useEffect(() => {
     if (!authLoading && !authUser) router.replace("/auth/login?next=/profile");
@@ -209,6 +212,35 @@ export default function ProfilePage() {
         <span className={`chip ${authUser.ageTier === "under-18" ? "border-rose-500/40 text-rose-300" : "border-emerald-400/40 text-emerald-300"}`}>
           {authUser.ageTier || "—"}
         </span>
+      </section>
+
+      {/* Preview as teen — UI-only switch for hosts to see the teen experience */}
+      <section className="card border-amber-400/25">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold flex items-center gap-2">
+              🌿 {t("profile.previewAsTeen")}
+              {previewing && (
+                <span className="chip border-amber-400/40 text-amber-300 !py-0.5 !px-2 text-[10px]">
+                  {t("profile.previewOn")}
+                </span>
+              )}
+            </h2>
+            <p className="text-white/50 text-xs mt-1 leading-snug">
+              {t("profile.previewAsTeenHint")}
+            </p>
+          </div>
+        </div>
+        <button
+          className={`mt-3 w-full rounded-xl py-2 text-sm font-bold border transition ${
+            previewing
+              ? "border-amber-400/50 text-amber-200 bg-amber-400/10 hover:bg-amber-400/20"
+              : "border-white/20 text-white/80 bg-white/5 hover:bg-white/10"
+          }`}
+          onClick={() => setPreviewAsTeen(!previewing)}
+        >
+          {previewing ? t("profile.previewTurnOff") : t("profile.previewAsTeen")}
+        </button>
       </section>
 
       <button className="btn-ghost" onClick={() => signOut().then(() => router.replace("/"))}>

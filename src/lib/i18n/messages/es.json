@@ -98,6 +98,10 @@
     "ageTier": "Nivel de edad",
     "ageTierUnder18": "Solo nivel suave",
     "ageTierAll": "Todos los niveles desbloqueados",
+    "previewAsTeen": "Vista previa como adolescente",
+    "previewAsTeenHint": "Mira la app como la ve un menor de 18 (juegos adultos ocultos, solo Suave). Solo UI — tu cuenta real no cambia.",
+    "previewOn": "Viendo modo adolescente",
+    "previewTurnOff": "Desactivar vista previa",
     "signOut": "Cerrar sesión",
     "dangerZone": "Zona de peligro",
     "deleteDesc": "Elimina tu cuenta, perfil y las salas que estés organizando. Las salas a las que te uniste como invitado permanecen.",
@@ -195,6 +199,9 @@
     "legal": "Legal"
   },
   "share": {
+    "title": "Compartir esta sala",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "Enlace copiado ✓",
     "copyToast": "Copiado — pégalo en {app} para enviarlo"
   }
 }

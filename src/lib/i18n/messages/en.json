@@ -98,6 +98,10 @@
     "ageTier": "Age tier",
     "ageTierUnder18": "Mild tier only",
     "ageTierAll": "All tiers unlocked",
+    "previewAsTeen": "Preview as teen",
+    "previewAsTeenHint": "See the app the way an under-18 player sees it (adult games hidden, Mild only). UI only — your real account is unchanged.",
+    "previewOn": "Previewing teen mode",
+    "previewTurnOff": "Turn off preview",
     "signOut": "Sign out",
     "dangerZone": "Danger zone",
     "deleteDesc": "Deletes your account, profile, and any rooms you're hosting. Rooms you've joined as a guest stay intact.",
@@ -195,6 +199,9 @@
     "legal": "Legal"
   },
   "share": {
+    "title": "Share this room",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied ✓",
     "copyToast": "Copied — paste it in {app} to send"
   }
 }

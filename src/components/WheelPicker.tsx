@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-// Vertical scroll-snap "wheel" — one column of items, the centered one is
-// the selected value. Designed to feel like an iOS picker. The container
-// shows ITEM_HEIGHT * VISIBLE pixels; the center band is the selection.
-const ITEM_HEIGHT = 36;
-const VISIBLE = 5;
+// Vertical scroll-snap "wheel" — one row tall, scroll to change.
+// Keeping a single visible row makes the picker compact (44px total),
+// while scroll-snap still gives a natural feel on touch + mouse wheel.
+const ITEM_HEIGHT = 44;
+const VISIBLE = 1;
 
 type Item = { value: string; label: string };
 
@@ -59,22 +59,13 @@ export function WheelPicker({
       role="listbox"
       aria-label={ariaLabel}
     >
-      {/* Highlight band over the center row */}
-      <div
-        className="absolute left-0 right-0 pointer-events-none border-y border-flame/40 bg-flame/5"
-        style={{
-          top: padding,
-          height: ITEM_HEIGHT,
-        }}
-      />
-      {/* Top + bottom fade for the wheel illusion */}
-      <div className="absolute inset-x-0 top-0 h-12 pointer-events-none bg-gradient-to-b from-[rgb(var(--bg))] to-transparent z-10" />
-      <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none bg-gradient-to-t from-[rgb(var(--bg))] to-transparent z-10" />
+      {/* Single-row highlight — fills the whole container */}
+      <div className="absolute inset-0 pointer-events-none rounded-lg border border-flame/40 bg-flame/5" />
 
       <div
         ref={ref}
         onScroll={onScroll}
-        className="h-full overflow-y-scroll snap-y snap-mandatory wheel-scroll"
+        className="h-full overflow-y-scroll snap-y snap-mandatory wheel-scroll rounded-lg"
         style={{ scrollbarWidth: "none" }}
       >
         <div style={{ height: padding }} />
@@ -90,8 +81,8 @@ export function WheelPicker({
                 const idx = items.findIndex((i) => i.value === item.value);
                 ref.current.scrollTo({ top: idx * ITEM_HEIGHT, behavior: "smooth" });
               }}
-              className={`flex items-center justify-center snap-center cursor-pointer transition select-none ${
-                active ? "text-white font-bold text-lg" : "text-white/45 text-base"
+              className={`flex items-center justify-center snap-center cursor-pointer transition select-none text-base ${
+                active ? "text-white font-bold" : "text-white/30"
               }`}
               style={{ height: ITEM_HEIGHT }}
             >

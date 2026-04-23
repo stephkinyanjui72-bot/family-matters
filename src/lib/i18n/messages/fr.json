@@ -98,6 +98,10 @@
     "ageTier": "Niveau d'âge",
     "ageTierUnder18": "Niveau doux uniquement",
     "ageTierAll": "Tous les niveaux débloqués",
+    "previewAsTeen": "Aperçu en mode ado",
+    "previewAsTeenHint": "Regarde l'app comme la voit un mineur (jeux adultes masqués, Doux uniquement). UI seulement — ton vrai compte n'est pas affecté.",
+    "previewOn": "Aperçu mode ado actif",
+    "previewTurnOff": "Désactiver l'aperçu",
     "signOut": "Se déconnecter",
     "dangerZone": "Zone de danger",
     "deleteDesc": "Supprime ton compte, profil et les salles que tu héberges. Les salles rejointes en invité restent intactes.",
@@ -195,6 +199,9 @@
     "legal": "Légal"
   },
   "share": {
+    "title": "Partager cette salle",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié ✓",
     "copyToast": "Copié — colle-le dans {app} pour l'envoyer"
   }
 }

@@ -5,7 +5,31 @@ import { isNativeApp } from "./platform";
 import type { Intensity, Room, GameId } from "./types";
 
 const LS_SESSION = "party:session";
+const LS_PREVIEW_TEEN = "party:previewAsTeen";
 const HEARTBEAT_INTERVAL_MS = 15_000;
+
+// Read the "preview as teen" flag. When set, the client treats the
+// signed-in user as under-18 regardless of their real birthdate, so the
+// host can see the teen-mode UI without making a second account. Server
+// endpoints still go by the real birthdate — this is UI-only.
+function readPreviewAsTeen(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return localStorage.getItem(LS_PREVIEW_TEEN) === "1"; } catch { return false; }
+}
+
+export function setPreviewAsTeen(on: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (on) localStorage.setItem(LS_PREVIEW_TEEN, "1");
+    else localStorage.removeItem(LS_PREVIEW_TEEN);
+    // Force a reload so the store re-hydrates the auth user with the new flag.
+    window.location.reload();
+  } catch {}
+}
+
+export function peekPreviewAsTeen(): boolean {
+  return readPreviewAsTeen();
+}
 
 type Session = { code: string; pid: string; name: string };
 
@@ -112,7 +136,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { data: userRes } = await sb.auth.getUser();
       const user = userRes.user;
       const dob = (profile as { birthdate?: string | null } | null)?.birthdate ?? null;
-      const ageTier = computeAgeTier(dob);
+      const realTier = computeAgeTier(dob);
+      // UI-only override: lets the user preview teen mode without creating
+      // a second account. Server endpoints still see the real birthdate.
+      const ageTier: AuthUser["ageTier"] = readPreviewAsTeen() ? "under-18" : realTier;
       if (alive) {
         setAuthUser({
           id: userId,

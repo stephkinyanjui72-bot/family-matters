@@ -98,6 +98,10 @@
     "ageTier": "Altersstufe",
     "ageTierUnder18": "Nur Stufe Sanft",
     "ageTierAll": "Alle Stufen freigeschaltet",
+    "previewAsTeen": "Als Teen ansehen",
+    "previewAsTeenHint": "Sieh die App wie ein Minderjähriger (Erwachsenen­spiele verborgen, nur Sanft). Nur UI — dein Konto bleibt unverändert.",
+    "previewOn": "Teen-Modus-Vorschau aktiv",
+    "previewTurnOff": "Vorschau ausschalten",
     "signOut": "Abmelden",
     "dangerZone": "Gefahrenzone",
     "deleteDesc": "Löscht dein Konto, Profil und alle Räume, die du hostest. Als Gast beigetretene Räume bleiben erhalten.",
@@ -195,6 +199,9 @@
     "legal": "Rechtliches"
   },
   "share": {
+    "title": "Diesen Raum teilen",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert ✓",
     "copyToast": "Kopiert — füge es in {app} ein zum Senden"
   }
 }

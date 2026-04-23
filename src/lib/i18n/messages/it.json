@@ -98,6 +98,10 @@
     "ageTier": "Fascia d'età",
     "ageTierUnder18": "Solo livello leggero",
     "ageTierAll": "Tutti i livelli sbloccati",
+    "previewAsTeen": "Anteprima come teen",
+    "previewAsTeenHint": "Vedi l'app come la vede un minorenne (giochi per adulti nascosti, solo Leggero). Solo UI — il tuo account resta invariato.",
+    "previewOn": "Anteprima modalità teen attiva",
+    "previewTurnOff": "Disattiva anteprima",
     "signOut": "Esci",
     "dangerZone": "Zona pericolo",
     "deleteDesc": "Elimina il tuo account, profilo e le stanze che ospiti. Le stanze a cui ti sei unito come ospite restano.",
@@ -195,6 +199,9 @@
     "legal": "Legale"
   },
   "share": {
+    "title": "Condividi questa stanza",
+    "copyLink": "Copia link",
+    "linkCopied": "Link copiato ✓",
     "copyToast": "Copiato — incollalo in {app} per inviare"
   }
 }

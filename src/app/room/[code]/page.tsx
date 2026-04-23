@@ -8,7 +8,7 @@ import type { Intensity } from "@/lib/types";
 import { useT, RichText } from "@/lib/i18n/context";
 import { GameScreen } from "@/components/GameScreen";
 import { ExitSessionButton } from "@/components/ExitSessionButton";
-import { SocialShareRow } from "@/components/SocialShareRow";
+import { ShareModal } from "@/components/ShareModal";
 
 type TierStyle = {
   id: Intensity;
@@ -65,11 +65,11 @@ export default function RoomPage() {
   // For teen accounts, the app hides adult tiers AND adult-themed games
   // entirely — they don't see them anywhere in the UI.
   const visibleGames = isTeen ? GAMES.filter((g) => g.minorSafe) : GAMES;
-  const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string>("");
   const [filter, setFilter] = useState<Category | "all">("all");
   const [intensityAck, setIntensityAck] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // If the room is an adult-tier (Extreme/Chaos) and the joiner hasn't
   // confirmed for THIS code yet, we show a blocking consent modal below.
@@ -208,43 +208,19 @@ export default function RoomPage() {
           <div className="w-56 h-56 bg-white/5 rounded-2xl animate-pulse" />
         )}
         <div className="text-[11px] text-white/60 text-center break-all font-mono">{joinUrl}</div>
-        <div className="flex gap-2">
-          <button
-            className="chip border-white/20 text-white/80 hover:text-white hover:border-white/40 transition"
-            onClick={async () => {
-              try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
-            }}
-          >
-            {copied ? t("room.copied") : t("room.copyLink")}
-          </button>
-          {/* Web Share API: opens the native share sheet on mobile (WhatsApp,
-              SMS, AirDrop, …). Falls back silently if unsupported (desktop). */}
-          <button
-            className="chip border-flame/40 text-flame bg-flame/10 hover:bg-flame/20 transition"
-            onClick={async () => {
-              const nav = typeof navigator !== "undefined" ? (navigator as unknown as { share?: (d: ShareData) => Promise<void> }) : undefined;
-              if (nav?.share) {
-                try {
-                  await nav.share({
-                    title: "Party Mate",
-                    text: t("room.shareText", { code: room.code }),
-                    url: joinUrl,
-                  });
-                } catch { /* user cancelled */ }
-              } else {
-                // Desktop fallback: copy to clipboard
-                try {
-                  await navigator.clipboard.writeText(joinUrl);
-                  setCopied(true); setTimeout(() => setCopied(false), 1500);
-                } catch {}
-              }
-            }}
-          >
-            {t("room.share")}
-          </button>
-        </div>
-        <SocialShareRow url={joinUrl} text={t("room.shareText", { code: room.code })} />
+        <button
+          className="chip border-flame/40 text-flame bg-flame/10 hover:bg-flame/20 transition"
+          onClick={() => setShareOpen(true)}
+        >
+          {t("room.share")}
+        </button>
       </section>
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={joinUrl}
+        text={t("room.shareText", { code: room.code })}
+      />
 
       <div className="section-frame">
         <section className="card">
