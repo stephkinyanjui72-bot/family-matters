@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 
 // The APK lives on GitHub Releases. /releases/latest/download/<filename>
 // redirects to whichever release is newest — re-upload with the same
@@ -22,6 +23,7 @@ function detectPlatform(ua: string): Platform {
 }
 
 export default function DownloadPage() {
+  const t = useT();
   const [platform, setPlatform] = useState<Platform>("unknown");
 
   useEffect(() => {
@@ -29,16 +31,16 @@ export default function DownloadPage() {
   }, []);
 
   return (
-    <main className="min-h-screen max-w-2xl mx-auto p-6 flex flex-col gap-6">
+    <main className="min-h-screen max-w-2xl mx-auto px-4 py-5 sm:p-6 flex flex-col gap-4 sm:gap-6">
       <header className="flex items-center justify-between pop-in">
-        <Link href="/" className="text-white/60 text-sm hover:text-white">← Back</Link>
-        <span className="chip border-white/15 text-white/60">Install</span>
+        <Link href="/" className="text-white/60 text-sm hover:text-white">← {t("common.back")}</Link>
+        <span className="chip border-white/15 text-white/60">{t("download.chip")}</span>
       </header>
 
       <div className="text-center pop-in">
-        <div className="text-6xl mb-2 float-slow">📲</div>
-        <h1 className="title text-4xl font-black holo-text">Get the App</h1>
-        <p className="text-white/60 mt-2 text-sm">One tap install · works offline once loaded · no account needed to join</p>
+        <div className="text-5xl sm:text-6xl mb-2 float-slow">📲</div>
+        <h1 className="title text-3xl sm:text-4xl font-black holo-text">{t("download.title")}</h1>
+        <p className="text-white/60 mt-2 text-xs sm:text-sm leading-snug px-2">{t("download.subtitle")}</p>
       </div>
 
       {platform === "android" && <AndroidInstall />}
@@ -51,14 +53,14 @@ export default function DownloadPage() {
         </>
       )}
 
-      <section className="card">
-        <h3 className="font-bold mb-2">Why no Play Store?</h3>
-        <p className="text-sm text-white/70 leading-relaxed">
-          Party Mate has adult content in the Chaos tier, and Google Play doesn't allow that. Sideloading the APK keeps the full game intact — no watered-down version.
+      <section className="card !p-4 sm:!p-6">
+        <h3 className="font-bold mb-2 text-sm sm:text-base">{t("download.whyNoPlayStore")}</h3>
+        <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
+          {t("download.playStoreBody")}
         </p>
       </section>
 
-      <footer className="text-center text-white/40 text-xs uppercase tracking-widest mt-auto pt-6">
+      <footer className="text-center text-white/40 text-[10px] sm:text-xs uppercase tracking-widest mt-auto pt-4 sm:pt-6">
         <Link href="/" className="hover:text-white">party-mate</Link>
       </footer>
     </main>
@@ -66,84 +68,73 @@ export default function DownloadPage() {
 }
 
 function AndroidInstall() {
+  const t = useT();
   return (
-    <section className="card-glow flex flex-col gap-4 pop-in">
+    <section className="card-glow !p-4 sm:!p-6 flex flex-col gap-3 sm:gap-4 pop-in">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-flame font-bold">Android</div>
-        <h2 className="title text-2xl font-black">Install on your phone</h2>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-flame font-bold">{t("download.androidKicker")}</div>
+        <h2 className="title text-xl sm:text-2xl font-black leading-tight">{t("download.androidTitle")}</h2>
       </div>
       <a
         href={APK_DOWNLOAD}
-        className="btn-primary text-xl h-16 text-center"
+        className="btn-primary text-base sm:text-xl h-14 sm:h-16 text-center"
       >
-        ⬇ Download APK
+        {t("download.downloadApk")}
       </a>
 
-      <ol className="flex flex-col gap-3 text-sm text-white/80">
-        <Step n={1} title="Tap Download APK above">
-          Your browser downloads the APK.
-          If a warning asks "Keep anyway?" — tap <b>Keep</b>.
-        </Step>
-        <Step n={2} title="Open the downloaded file">
-          Pull down your notification shade and tap the download, or open your Files app and find the downloaded APK.
-        </Step>
-        <Step n={3} title="Allow install from this source">
-          Android blocks installs from outside the Play Store by default.
-          On the popup, tap <b>Settings</b> → toggle <b>Allow from this source</b> <b>ON</b> → tap the back arrow.
-        </Step>
-        <Step n={4} title="Install">
-          Tap <b>Install</b>. When it says "App installed", tap <b>Open</b>.
-        </Step>
+      <ol className="flex flex-col gap-3 text-xs sm:text-sm text-white/80">
+        <Step n={1} title={t("download.step1Title")}>{t("download.step1Body")}</Step>
+        <Step n={2} title={t("download.step2Title")}>{t("download.step2Body")}</Step>
+        <Step n={3} title={t("download.step3Title")}>{t("download.step3Body")}</Step>
+        <Step n={4} title={t("download.step4Title")}>{t("download.step4Body")}</Step>
       </ol>
 
-      <p className="text-xs text-white/40">
-        Don't see a download button? Check our <a className="underline hover:text-white" href={RELEASES_LATEST} target="_blank" rel="noopener noreferrer">GitHub Releases</a> page.
+      <p className="text-[11px] sm:text-xs text-white/40">
+        {t("download.releasesHint").split("GitHub Releases")[0]}
+        <a className="underline hover:text-white" href={RELEASES_LATEST} target="_blank" rel="noopener noreferrer">GitHub Releases</a>
+        {t("download.releasesHint").split("GitHub Releases")[1] || ""}
       </p>
     </section>
   );
 }
 
 function IOSInstall() {
+  const t = useT();
   return (
-    <section className="card-glow flex flex-col gap-4 pop-in">
+    <section className="card-glow !p-4 sm:!p-6 flex flex-col gap-3 sm:gap-4 pop-in">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-cyber font-bold">iPhone / iPad</div>
-        <h2 className="title text-2xl font-black">Add to Home Screen</h2>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-cyber font-bold">{t("download.iosKicker")}</div>
+        <h2 className="title text-xl sm:text-2xl font-black leading-tight">{t("download.iosTitle")}</h2>
       </div>
-      <p className="text-sm text-white/80">
-        iOS doesn't allow APKs. Use the web app — it works just like a native app when added to your home screen.
+      <p className="text-xs sm:text-sm text-white/80 leading-snug">
+        {t("download.iosIntro")}
       </p>
-      <ol className="flex flex-col gap-3 text-sm text-white/80">
-        <Step n={1} title="Open the site in Safari">
-          <b>Must be Safari</b>, not Chrome. Visit <code className="text-flame">family-matters-taupe.vercel.app</code>.
+      <ol className="flex flex-col gap-3 text-xs sm:text-sm text-white/80">
+        <Step n={1} title={t("download.iosStep1Title")}>
+          {t("download.iosStep1Body")} <code className="text-flame break-all">family-matters-taupe.vercel.app</code>
         </Step>
-        <Step n={2} title="Tap the Share icon">
-          The square with an up-arrow, at the bottom-center of Safari.
-        </Step>
-        <Step n={3} title="Add to Home Screen">
-          Scroll the share sheet. Tap <b>Add to Home Screen</b> → <b>Add</b>.
-        </Step>
-        <Step n={4} title="Launch from home screen">
-          The icon opens the app fullscreen — no browser bars.
-        </Step>
+        <Step n={2} title={t("download.iosStep2Title")}>{t("download.iosStep2Body")}</Step>
+        <Step n={3} title={t("download.iosStep3Title")}>{t("download.iosStep3Body")}</Step>
+        <Step n={4} title={t("download.iosStep4Title")}>{t("download.iosStep4Body")}</Step>
       </ol>
     </section>
   );
 }
 
 function DesktopInstall() {
+  const t = useT();
   return (
-    <section className="card-glow flex flex-col gap-4 pop-in">
+    <section className="card-glow !p-4 sm:!p-6 flex flex-col gap-3 sm:gap-4 pop-in">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-neon font-bold">Desktop</div>
-        <h2 className="title text-2xl font-black">Play in your browser</h2>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-neon font-bold">{t("download.desktopKicker")}</div>
+        <h2 className="title text-xl sm:text-2xl font-black leading-tight">{t("download.desktopTitle")}</h2>
       </div>
-      <p className="text-sm text-white/80">
-        Desktop doesn't need an install — just host a room and let your friends scan the QR.
+      <p className="text-xs sm:text-sm text-white/80 leading-snug">
+        {t("download.desktopBody")}
       </p>
-      <Link href="/" className="btn-primary text-lg h-14 text-center">🎉 Start a Party</Link>
-      <p className="text-xs text-white/50">
-        On Chrome / Edge, an <b>Install</b> icon in the address bar turns it into a desktop app window.
+      <Link href="/" className="btn-primary text-base sm:text-lg h-14 text-center">{t("download.startParty")}</Link>
+      <p className="text-[11px] sm:text-xs text-white/50 leading-snug">
+        {t("download.desktopHint")}
       </p>
     </section>
   );
@@ -151,11 +142,11 @@ function DesktopInstall() {
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <li className="flex gap-3">
-      <span className="shrink-0 rounded-full w-7 h-7 bg-gradient-to-br from-flame to-ember flex items-center justify-center text-sm font-black">{n}</span>
-      <div>
-        <div className="font-bold text-white">{title}</div>
-        <div className="text-white/70 mt-0.5">{children}</div>
+    <li className="flex gap-2.5 sm:gap-3">
+      <span className="shrink-0 rounded-full w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-flame to-ember flex items-center justify-center text-xs sm:text-sm font-black">{n}</span>
+      <div className="min-w-0">
+        <div className="font-bold text-white text-sm sm:text-base leading-tight">{title}</div>
+        <div className="text-white/70 mt-1 leading-snug">{children}</div>
       </div>
     </li>
   );
